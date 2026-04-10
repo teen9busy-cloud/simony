@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <style>
+      html, body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; height: 100%; }
+      .app-wrapper { height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+      .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px 30px; box-sizing: border-box; border-radius: 2px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+      
+      .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #2e7d32; padding-bottom: 15px; }
+      .title { font-size: 24px; font-weight: bold; color: #1b5e20; margin: 0; text-align: center; flex-grow: 1; }
+      
+      .btn { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; color: white; font-weight: bold; transition: background 0.2s; }
+      .btn-back { background-color: #757575; }
+      .btn-anon { background-color: #607d8b; display: flex; align-items: center; gap: 5px; }
+      
+      /* PDF 양식 스타일 표 구현 */
+      .report-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 15px; color: #333; line-height: 1.6; }
+      .report-table th, .report-table td { border: 1px solid #000; padding: 12px; }
+      .report-table th { background-color: #f5f5f5; text-align: center; font-weight: bold; width: 20%; }
+      
+      .content-box { white-space: pre-wrap; min-height: 100px; }
+      
+      #loading { text-align: center; padding: 50px; font-size: 18px; color: #4CAF50; }
+      #reportContent { display: none; }
+      
+      @media print {
+        body { background-color: white; }
+        .app-wrapper { padding: 0; overflow: visible; }
+        .container { box-shadow: none; max-width: 100%; padding: 0; }
+        .header-actions { display: none !important; }
+      }
+    </style>
+    <script>
+      var APP_REGION = "<?= region ?>";
+      var APP_USER = "<?= userName ?>";
+      var GROUP_ID = "<?= groupId ?>";
+      
+      var rawParticipants = [];
+      var isAnonymous = false;
+
+      window.onload = function() {
+        google.script.run.withSuccessHandler(renderData).getGroupConsultationData(GROUP_ID, APP_REGION);
+      };
+
+      function renderData(res) {
+        document.getElementById('loading').style.display = 'none';
+        if(!res || !res.success) {
+          alert("데이터를 불러오지 못했습니다: " + (res ? res.message : ""));
+          return;
+        }
+
+        var common = res.common;
+        rawParticipants = res.participants;
+
+        document.getElementById('v_date').innerText = common.date;
+        document.getElementById('v_time').innerText = common.timeRange;
+        document.getElementById('v_place').innerText = common.place;
+        document.getElementById('v_counselor').innerText = common.counselor;
+        document.getElementById('v_subCat').innerText = common.subCat;
+        document.getElementById('v_action').innerText = common.action || "내용 없음";
+        document.getElementById('v_eval').innerText = common.eval || "내용 없음";
+        
+        renderParticipants();
+        document.getElementById('reportContent').style.display = 'block';
+      }
+
+      // 익명 처리 로직 (이OO, 김O, 남궁OO 등)
+      function renderParticipants() {
+        var nameListStr = "";
+        for(var i = 0; i < rawParticipants.length; i++) {
+          var name = rawParticipants[i].name;
+          var display = name;
+          
+          if(isAnonymous) {
+            if(name.length === 2) {
+              display = name.charAt(0) + "O";
+            } else if(name.length >= 3) {
+              display = name.charAt(0) + "OO" + (name.length > 3 ? name.substring(3).replace(/./g, '') : '');
+            }
+          }
+          nameListStr += display + (i < rawParticipants.length - 1 ? ", " : "");
+        }
+        
+        document.getElementById('v_partCount').innerText = rawParticipants.length + "명";
+        document.getElementById('v_partList').innerText = nameListStr;
+      }
+
+      function toggleAnonymity() {
+        isAnonymous = !isAnonymous;
+        var btn = document.getElementById('btn-anon');
+        if(isAnonymous) {
+          btn.innerHTML = "👀 실명 보기";
+          btn.style.backgroundColor = "#ff9800";
+        } else {
+          btn.innerHTML = "🔒 익명 처리 (이OO)";
+          btn.style.backgroundColor = "#607d8b";
+        }
+        renderParticipants();
+      }
+
+      function goBack() {
+        document.body.innerHTML = "<div class='app-wrapper'><div id='loading' style='display:block;'>대시보드로 이동 중...</div></div>";
+        google.script.run.withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); }).loadDashboard(APP_REGION, APP_USER);
+      }
+    </script>
+  </head>
+  <body>
+    <div class="app-wrapper">
+      <div class="container">
+        
+        <div class="header-actions">
+          <button class="btn btn-back" onclick="goBack()">◀ 이전 화면</button>
+          <div class="title">집단상담일지 (뷰어)</div>
+          <button id="btn-anon" class="btn btn-anon" onclick="toggleAnonymity()">🔒 익명 처리 (이OO)</button>
+        </div>
+
+        <div id="loading">저장된 집단상담 데이터를 문서화하고 있습니다...</div>
+
+        <div id="reportContent">
+          <table class="report-table">
+            <tbody>
+              <tr>
+                <th>작성일자</th>
+                <td id="v_date"></td>
+                <th>작성자</th>
+                <td id="v_counselor"></td>
+              </tr>
+              <tr>
+                <th>시 간</th>
+                <td id="v_time"></td>
+                <th>상담분류</th>
+                <td id="v_subCat"></td>
+              </tr>
+              <tr>
+                <th>장 소</th>
+                <td colspan="3" id="v_place"></td>
+              </tr>
+              <tr>
+                <th>참석자<br>(<span id="v_partCount"></span>)</th>
+                <td colspan="3" id="v_partList" style="word-break: break-all;"></td>
+              </tr>
+              <tr>
+                <th>진행 내용</th>
+                <td colspan="3" class="content-box" id="v_action"></td>
+              </tr>
+              <tr>
+                <th>소감 및 평가</th>
+                <td colspan="3" class="content-box" id="v_eval"></td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="text-align: right; color: #666; font-size: 13px;">※ 이 페이지의 표를 드래그하여 한글(hwp)이나 워드에 바로 붙여넣어 보고서로 활용하실 수 있습니다.</div>
+        </div>
+
+      </div>
+    </div>
+  </body>
+</html>

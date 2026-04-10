@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <style>
+      html, body {
+        font-family: 'Malgun Gothic', sans-serif;
+        background-color: #f4f7f6;
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        touch-action: manipulation;
+      }
+      .app-wrapper {
+        height: 100%;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        background: white;
+        padding: 30px 20px;
+        box-sizing: border-box;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      }
+      button, a, .btn-small, .btn-action, .btn-orange { -webkit-tap-highlight-color: transparent; }
+      .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4CAF50; padding-bottom: 15px; margin-bottom: 20px; }
+      .header h2 { margin: 0; color: #2c3e50; font-weight: normal; }
+      .btn-back { background-color: #757575; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; }
+      .info-box { background-color: #e8f5e9; padding: 20px; border-radius: 8px; margin-bottom: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+      .info-item { font-size: 15px; color: #333; }
+      .section-title { font-size: 18px; color: #2e7d32; margin-bottom: 15px; border-left: 4px solid #4CAF50; padding-left: 10px; display: flex; justify-content: space-between; align-items: center; }
+      table { width: 100%; border-collapse: collapse; margin-bottom: 30px; background-color: white; }
+      th, td { border: 1px solid #ddd; padding: 12px; text-align: center; font-size: 14px; }
+      th { background-color: #f5f5f5; color: #333; font-weight: normal; }
+      .btn-small { background-color: #0288d1; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin: 2px; }
+      .btn-action { background-color: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; margin-bottom: 10px;}
+      .btn-orange { background-color: #ff9800; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; margin-bottom: 10px;}
+      #loading { text-align: center; padding: 50px; font-size: 18px; color: #666; display: none; }
+      @media (max-width: 600px) {
+        .info-box { grid-template-columns: 1fr; }
+        .action-buttons { flex-direction: column; }
+      }
+    </style>
+    <script>
+      if (!window.historyTrapSet) {
+        history.pushState(null, null, location.href);
+        window.historyTrapSet = true;
+      }
+
+      window.onpopstate = function(event) {
+        history.pushState(null, null, location.href);
+        if (typeof goBack === 'function') goBack();
+      };
+
+      (function detectInAppBrowser() {
+        var ua = navigator.userAgent.toLowerCase();
+        var isInApp = ua.match(/kakaotalk|line|naver|snapchat|instagram|facebook/i);
+        if (isInApp) {
+          window.addEventListener('DOMContentLoaded', function() {
+            var overlay = document.createElement('div');
+            overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);color:#fff;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:18px;text-align:center;padding:20px;box-sizing:border-box;";
+            overlay.innerHTML = "<h3 style='color:#ff5252; margin-bottom:10px;'>인앱 브라우저 접속 제한</h3><p style='line-height:1.5;'>현재 카카오톡 등 내부 브라우저로 접속하셨습니다.<br>이 환경에서는 일지 저장이 끊길 수 있습니다.</p><p style='color:#ffeb3b; margin-top:20px; line-height:1.5;'>화면 우측 하단 또는 상단의 [ ⋮ ] 메뉴를 눌러<br>다른 브라우저로 열기<br>또는 Safari로 열기를 반드시 선택해 주세요.</p>";
+            document.body.appendChild(overlay);
+          });
+        }
+      })();
+
+      var APP_REGION = "<?= region ?>";
+      var APP_USER = "<?= userName ?>";
+
+      window.onload = function() {
+        var internalId = document.getElementById('internalId').value;
+        google.script.run.withSuccessHandler(displayInfo).getClientDetailData(internalId, APP_REGION);
+        google.script.run.withSuccessHandler(displayHistory).getPastConsultations(internalId, APP_REGION);
+        google.script.run.withSuccessHandler(displayTestHistory).getTestRecords(internalId, APP_REGION);
+        google.script.run.withSuccessHandler(displaySimpleTest).getSimpleTestRecords(internalId, APP_REGION);
+      };
+
+      function displayInfo(response) {
+        if(response.success) {
+          var info = response.info;
+          document.getElementById('c_name').innerText = info.name || "-";
+          document.getElementById('c_empId').innerText = info.empId || "-";
+          document.getElementById('c_dept').innerText = info.dept || "-";
+          document.getElementById('c_rank').innerText = info.rank || "-";
+          document.getElementById('c_birth').innerText = info.birth || "-";
+          document.getElementById('c_gender').innerText = info.gender || "-";
+        }
+      }
+
+      function displayHistory(response) {
+        var tbody = document.getElementById('historyBody');
+        if(response.success && response.data.length > 0) {
+          var html = "";
+          for(var i=0; i<response.data.length; i++) {
+            var c = response.data[i];
+            html += "<tr>";
+            html += "<td>" + c.refNum + "</td>";
+            html += "<td>" + (c.month ? c.month + "월 " + c.day + "일" : "-") + "</td>";
+            html += "<td>" + (c.stress || "-") + "</td>";
+            html += "<td>" + (c.counselor || "-") + "</td>";
+            html += "<td><button class='btn-small' onclick='viewConsultation(\"" + c.rowIndex + "\")'>열람</button></td>";
+            html += "</tr>";
+          }
+          tbody.innerHTML = html;
+        } else {
+          tbody.innerHTML = "<tr><td colspan='5'>상담 일지 기록이 없습니다.</td></tr>";
+        }
+      }
+
+      function displayTestHistory(response) {
+        var tbody = document.getElementById('testBody');
+        if(response.success && response.data.length > 0) {
+          var html = "";
+          for(var i=0; i<response.data.length; i++) {
+            var t = response.data[i];
+            html += "<tr><td>" + t.date + "</td><td>" + (t.type || "-") + "</td><td>" + (t.result || "-") + "</td><td>" + (t.action || "-") + "</td></tr>";
+          }
+          tbody.innerHTML = html;
+        } else {
+          tbody.innerHTML = "<tr><td colspan='4'>일지에 등록된 임상 심리검사 결과가 없습니다.</td></tr>";
+        }
+      }
+
+      function displaySimpleTest(response) {
+        var tbody = document.getElementById('simpleTestBody');
+        if(response.success && response.data.length > 0) {
+          var html = "";
+          for(var i=0; i<response.data.length; i++) {
+            var t = response.data[i];
+            var ptsdStyle = t.ptsd >= 14 ? "color: red;" : ""; 
+            var depStyle = t.depress >= 5 ? "color: red;" : "";
+            var suiStyle = t.suicide >= 1 ? "color: red;" : "";
+            html += "<tr><td>" + t.date + "</td><td style='" + ptsdStyle + "'>" + t.ptsd + " 점</td><td style='" + depStyle + "'>" + t.depress + " 점</td><td style='" + suiStyle + "'>" + t.suicide + " 점</td></tr>";
+          }
+          tbody.innerHTML = html;
+        } else {
+          tbody.innerHTML = "<tr><td colspan='4'>QR 코드로 제출된 마음건강 간이검사 결과가 없습니다.</td></tr>";
+        }
+      }
+
+      function goBack() {
+        document.body.innerHTML = "<div class='app-wrapper'><div id='loading' style='display:block;'>대시보드로 돌아가는 중입니다...</div></div>";
+        google.script.run
+          .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
+          .withFailureHandler(function(err) { alert("화면 이동 오류: " + err.message); location.reload(); })
+          .loadDashboard(APP_REGION, APP_USER);
+      }
+
+      function newConsultation() {
+        var internalId = document.getElementById('internalId').value;
+        document.body.innerHTML = "<div class='app-wrapper'><div id='loading' style='display:block;'>상담 일지 작성 화면으로 이동 중입니다...</div></div>";
+        google.script.run
+          .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
+          .withFailureHandler(function(err) { alert("화면 이동 오류: " + err.message); location.reload(); })
+          .loadConsultationForm(internalId, APP_REGION, APP_USER, "");
+      }
+
+      function viewConsultation(rowIndex) {
+        document.body.innerHTML = "<div class='app-wrapper'><div id='loading' style='display:block;'>일지 데이터를 불러오는 중입니다...</div></div>";
+        google.script.run
+          .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
+          .withFailureHandler(function(err) { alert("화면 이동 오류: " + err.message); location.reload(); })
+          .loadConsultationView(rowIndex, APP_REGION, APP_USER); 
+      }
+
+      function copyQrUrl() {
+        google.script.run.withSuccessHandler(function(url) {
+          var internalId = document.getElementById('internalId').value;
+          var finalUrl = url + "?page=survey&region=" + encodeURIComponent(APP_REGION) + "&id=" + encodeURIComponent(internalId);
+          navigator.clipboard.writeText(finalUrl).then(function() {
+            alert("QR 검사용 주소가 복사되었습니다.\n" + finalUrl);
+          });
+        }).getAppUrl();
+      }
+
+      function openQrUrl() {
+        google.script.run.withSuccessHandler(function(url) {
+          var internalId = document.getElementById('internalId').value;
+          var finalUrl = url + "?page=survey&region=" + encodeURIComponent(APP_REGION) + "&id=" + encodeURIComponent(internalId);
+          window.open(finalUrl, "_blank");
+        }).getAppUrl();
+      }
+    </script>
+  </head>
+  <body>
+    <div class="app-wrapper">
+      <div class="container">
+        <div class="header">
+          <h2>내담자 상세 정보</h2>
+          <button class="btn-back" onclick="goBack()">목록으로 돌아가기</button>
+        </div>
+        <input type="hidden" id="internalId" value="<?= internalId ?>">
+        
+        <div class="info-box">
+          <div class="info-item">성명: <span id="c_name"></span></div>
+          <div class="info-item">사번: <span id="c_empId"></span></div>
+          <div class="info-item" style="grid-column: 1 / -1;">소속: <span id="c_dept"></span></div>
+          <div class="info-item">직급: <span id="c_rank"></span></div>
+          <div class="info-item">생년월일: <span id="c_birth"></span></div>
+          <div class="info-item">성별: <span id="c_gender"></span></div>
+        </div>
+        
+        <div class="section-title">
+          마음건강 간이검사 결과
+          <div style="display: flex; gap: 5px;">
+            <button class="btn-small" style="background-color: #607d8b;" onclick="copyQrUrl()">QR용 복사</button>
+            <button class="btn-small" onclick="openQrUrl()">새 창 실시</button>
+          </div>
+        </div>
+        <div style="overflow-x: auto;">
+          <table>
+            <thead><tr><th>검사 일자</th><th>PTSD</th><th>우울</th><th>자살위험</th></tr></thead>
+            <tbody id="simpleTestBody"><tr><td colspan="4">데이터를 불러오는 중입니다...</td></tr></tbody>
+          </table>
+        </div>
+
+        <div class="section-title">임상 심리검사 결과</div>
+        <div style="overflow-x: auto;">
+          <table>
+            <thead><tr><th>검사 일자</th><th>검사 종류</th><th>검사 결과 요약</th><th>조치 내용</th></tr></thead>
+            <tbody id="testBody"><tr><td colspan="4">데이터를 불러오는 중입니다...</td></tr></tbody>
+          </table>
+        </div>
+
+        <div class="section-title">상담 일지 기록</div>
+        <div style="overflow-x: auto;">
+          <table>
+            <thead><tr><th>관리번호</th><th>상담일자</th><th>스트레스원</th><th>상담사</th><th>관리</th></tr></thead>
+            <tbody id="historyBody"><tr><td colspan="5">데이터를 불러오는 중입니다...</td></tr></tbody>
+          </table>
+        </div>
+
+        <div class="action-buttons" style="display: flex; gap: 10px;">
+          <button class="btn-action" style="flex: 1;" onclick="newConsultation()">신규 상담 일지 작성</button>
+          <button class="btn-orange" style="flex: 1;" onclick="alert('소방청 양식 결과 통계는 대시보드 엑셀 다운로드 기능을 이용해 주세요.')">소방청 설문 결과 보기</button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <style>
+      html, body {
+        font-family: 'Malgun Gothic', sans-serif;
+        background-color: #f4f7f6;
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        touch-action: manipulation;
+      }
+      .app-wrapper {
+        height: 100%;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .container {
+        max-width: 950px;
+        margin: 0 auto;
+        background: white;
+        padding: 20px;
+        box-sizing: border-box;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      }
+      button, a, tr { -webkit-tap-highlight-color: transparent; }
+      .header { border-bottom: 2px solid #4CAF50; padding-bottom: 10px; margin-bottom: 20px; }
+      .search-box { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+      input[type="text"] { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
+      button { padding: 10px 20px; color: white; border: none; cursor: pointer; border-radius: 4px; font-size: 14px; }
+      .btn-search { background-color: #4CAF50; }
+      .btn-my-clients { background-color: #2196F3; }
+      .btn-direct-reg { background-color: #FF9800; }
+      .btn-survey { background-color: #607D8B; }
+      .btn-admin { background-color: #9C27B0; display: none; } /* 처음엔 숨김 */
+      .btn-logout { background-color: #f44336; padding: 5px 15px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+      th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+      th { background-color: #f2f2f2; }
+      tr:hover { background-color: #f5f5f5; cursor: pointer; }
+      #loading { text-align: center; padding: 50px; font-size: 18px; color: #666; display: none; }
+    </style>
+    <script>
+      if (!window.historyTrapSet) {
+        history.pushState(null, null, location.href);
+        window.historyTrapSet = true;
+      }
+
+      window.onpopstate = function(event) {
+        history.pushState(null, null, location.href);
+        if (typeof logout === 'function') logout();
+      };
+
+      (function detectInAppBrowser() {
+        var ua = navigator.userAgent.toLowerCase();
+        var isInApp = ua.match(/kakaotalk|line|naver|snapchat|instagram|facebook/i);
+        if (isInApp) {
+          window.addEventListener('DOMContentLoaded', function() {
+            var overlay = document.createElement('div');
+            overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);color:#fff;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:18px;text-align:center;padding:20px;box-sizing:border-box;";
+            overlay.innerHTML = "<h3 style='color:#ff5252; margin-bottom:10px;'>인앱 브라우저 접속 제한</h3><p style='line-height:1.5;'>현재 카카오톡 등 내부 브라우저로 접속하셨습니다.<br>이 환경에서는 일지 저장이 끊길 수 있습니다.</p><p style='color:#ffeb3b; margin-top:20px; line-height:1.5;'>화면 우측 하단 또는 상단의 [ ⋮ ] 메뉴를 눌러<br>다른 브라우저로 열기<br>또는 Safari로 열기를 반드시 선택해 주세요.</p>";
+            document.body.appendChild(overlay);
+          });
+        }
+      })();
+
+      var APP_REGION = "<?= region ?>";
+      var APP_USER = "<?= userName ?>";
+
+      window.onload = function() {
+        // 화면이 열릴 때, 서버에 현재 로그인한 사람의 권한을 물어봅니다.
+        google.script.run
+          .withSuccessHandler(function(role) {
+            if (role === '관리자') {
+              document.getElementById('adminBtn').style.display = 'inline-block'; // 관리자면 버튼 표시
+            }
+          })
+          .getUserRole(APP_USER, APP_REGION);
+      };
+
+      function openAdminStats() {
+        document.body.innerHTML = "<div class='app-wrapper'><h3 style='text-align:center; padding-top:50px;'>관리자 통계 화면으로 이동합니다...</h3></div>";
+        google.script.run
+          .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
+          .withFailureHandler(function(err) { alert("화면 이동 오류: " + err.message); location.reload(); })
+          .loadAdminStatsPage(APP_REGION, APP_USER);
+      }
+
+      function doSearch() {
+        var keyword = document.getElementById('searchKeyword').value;
+        if (keyword.trim() === "") { alert("검색어를 입력하세요."); return; }
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('resultTable').style.display = 'none';
+        
+        google.script.run
+          .withSuccessHandler(displayResults)
+          .withFailureHandler(function(err) { alert("검색 중 오류가 발생했습니다: " + err.message); document.getElementById('loading').style.display = 'none'; })
+          .searchClient(keyword, APP_REGION);
+      }
+
+      function loadMyClients() {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('resultTable').style.display = 'none';
+        
+        google.script.run
+          .withSuccessHandler(displayResults)
+          .withFailureHandler(function(err) { alert("조회 중 오류가 발생했습니다: " + err.message); document.getElementById('loading').style.display = 'none'; })
+          .getMyClients(APP_REGION, APP_USER);
+      }
+
+      function displayResults(response) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('resultTable').style.display = 'table';
+        var tbody = document.getElementById('resultBody');
+        tbody.innerHTML = "";
+        
+        if (!response || !response.success || response.data.length === 0) {
+          tbody.innerHTML = "<tr><td colspan='5'>검색 결과가 없습니다.</td></tr>";
+          return;
+        }
+
+        var results = response.data;
+        for (var i = 0; i < results.length; i++) {
+          var tr = document.createElement('tr');
+          var r = results[i];
+          tr.innerHTML = "<td>" + r.dept + "</td><td>" + r.rank + "</td><td>" + r.name + "</td><td>" + r.birth + "</td><td>" + r.empId + "</td>";
+          tr.onclick = (function(id) { return function() { viewClientDetail(id); }; })(r.internalId);
+          tbody.appendChild(tr);
+        }
+      }
+
+      function viewClientDetail(internalId) {
+        document.body.innerHTML = "<div class='app-wrapper'><h3 style='text-align:center; padding-top:50px;'>내담자 상세 페이지로 이동합니다...</h3></div>";
+        google.script.run
+          .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
+          .loadClientDetailPage(internalId, APP_REGION, APP_USER);
+      }
+
+      function openEmptyForm() {
+        document.body.innerHTML = "<div class='app-wrapper'><h3 style='text-align:center; padding-top:50px;'>신규 등록 화면으로 이동합니다...</h3></div>";
+        google.script.run
+          .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
+          .loadConsultationForm("NEW_" + new Date().getTime(), APP_REGION, APP_USER, "");
+      }
+
+      function openSurveyFromDashboard() {
+        google.script.run.withSuccessHandler(function(url) {
+          var finalUrl = url + "?page=survey&region=" + encodeURIComponent(APP_REGION);
+          window.open(finalUrl, "_blank");
+        }).getAppUrl();
+      }
+
+      function logout() {
+        if (confirm("로그아웃 하시겠습니까?")) {
+          sessionStorage.clear();
+          localStorage.removeItem("app_region");
+          localStorage.removeItem("app_userName");
+          
+          document.body.innerHTML = "<div class='app-wrapper'><div style='text-align:center; padding-top:50px;'><h3>로그아웃 중입니다...</h3></div></div>";
+          google.script.run
+            .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
+            .withFailureHandler(function(err) { alert("로그아웃 오류: " + err.message); location.reload(); })
+            .loadLoginPage();
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div class="app-wrapper">
+      <div class="container">
+        <div class="header">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0;">더심온 메인 대시보드</h2>
+            <button class="btn-logout" onclick="logout()">로그아웃</button>
+          </div>
+          <p style="margin: 10px 0 0 0; color: #555;"><?= userName ?> 상담사님 환영합니다. (관할 지역: <?= region ?>)</p>
+        </div>
+
+        <div class="search-box">
+   <input type="text" id="searchKeyword" placeholder="내담자 이름 또는 사번을 입력하세요" onkeydown="if(event.keyCode==13) doSearch()">
+   <button class="btn-search" onclick="doSearch()">검색</button>
+   <button class="btn-my-clients" onclick="loadMyClients()">내 내담자 보기</button>
+   <button class="btn-direct-reg" onclick="openEmptyForm()">신규 내담자 등록</button>
+
+   <button class="btn-direct-reg" style="background-color: #009688;" onclick="document.body.innerHTML='<div class=\'app-wrapper\'><h3 style=\'text-align:center; padding-top:50px; color:#4CAF50;\'>집단상담 화면으로 이동합니다...</h3></div>'; google.script.run.withSuccessHandler(function(html){document.open();document.write(html);document.close();}).loadGroupForm('<?= region ?>', '<?= userName ?>')">👥 집단상담 등록</button>
+   <button class="btn-direct-reg" style="background-color: #00796B;" onclick="document.body.innerHTML='<div class=\'app-wrapper\'><h3 style=\'text-align:center; padding-top:50px; color:#4CAF50;\'>집단상담 목록을 불러옵니다...</h3></div>'; google.script.run.withSuccessHandler(function(html){document.open();document.write(html);document.close();}).loadGroupList('<?= region ?>', '<?= userName ?>')">🔍 집단상담 목록</button>
+
+   <button class="btn-survey" onclick="openSurveyFromDashboard()">간이검사 실시</button>
+   <button id="adminBtn" class="btn-admin" onclick="openAdminStats()">관리자 통계</button>
+ </div>
+
+        <table id="resultTable">
+          <thead>
+            <tr><th>소속</th><th>직급</th><th>성명</th><th>생년월일(6자리)</th><th>사번</th></tr>
+          </thead>
+          <tbody id="resultBody">
+            <tr><td colspan="5">검색어를 입력하거나 내 내담자 보기를 클릭하세요.</td></tr>
+          </tbody>
+        </table>
+        <div id="loading">데이터를 불러오는 중입니다...</div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <style>
+      html, body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; height: 100%; }
+      .app-wrapper { height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+      .container { max-width: 1400px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+      
+      .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4CAF50; padding-bottom: 15px; margin-bottom: 20px; }
+      .header h2 { margin: 0; color: #2c3e50; font-weight: normal; }
+      .btn-back { background-color: #757575; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; }
+      
+      .controls { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; }
+      .controls select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 15px; }
+      .btn-calc { background-color: #2196F3; color: white; padding: 8px 20px; border: none; border-radius: 4px; cursor: pointer; }
+      
+      .tabs { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 1px solid #ccc; }
+      .tab-btn { padding: 10px 20px; background-color: #eee; border: 1px solid #ccc; border-bottom: none; border-radius: 5px 5px 0 0; cursor: pointer; font-size: 15px; color: #555; }
+      .tab-btn.active { background-color: #4CAF50; color: white; border-color: #4CAF50; }
+      
+      .tab-content { display: none; }
+      .tab-content.active { display: block; }
+      
+      .table-wrapper { width: 100%; overflow-x: auto; margin-bottom: 40px; }
+      table { width: 100%; border-collapse: collapse; min-width: 1000px; font-size: 13px; text-align: center; white-space: nowrap; }
+      th, td { border: 1px solid #ddd; padding: 8px; }
+      th { background-color: #f5f5f5; color: #333; position: sticky; top: 0; }
+      .text-left { text-align: left; }
+      
+      #loading { text-align: center; padding: 50px; font-size: 18px; color: #4CAF50; display: block; }
+      .dashboard-body { display: none; }
+      h3 { color: #1b5e20; margin-top: 10px; margin-bottom: 10px; font-weight: normal; }
+    </style>
+    <script>
+      var APP_REGION = "<?= region ?>";
+      var APP_USER = "<?= userName ?>";
+
+      window.onload = function() {
+        var currentYear = new Date().getFullYear();
+        var sel = document.getElementById('yearSelect');
+        for(var y = currentYear - 1; y <= currentYear + 2; y++) {
+          var opt = document.createElement('option'); opt.value = y; opt.text = y + "년";
+          if(y === currentYear) opt.selected = true;
+          sel.add(opt);
+        }
+        loadData();
+      };
+
+      function loadData() {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('dashboard-body').style.display = 'none';
+        var year = document.getElementById('yearSelect').value;
+        google.script.run.withSuccessHandler(processData).calculateAdminStats(APP_REGION, year);
+      }
+
+      function addStats(st1, st2) {
+        var res = JSON.parse(JSON.stringify(st1));
+        res.totalP += st2.totalP; res.totalC += st2.totalC;
+        res.screenP += st2.screenP; res.screenC += st2.screenC;
+        res.indepthP += st2.indepthP; res.indepthC += st2.indepthC;
+        res.lifeP += st2.lifeP; res.lifeC += st2.lifeC; res.lifeTestC += st2.lifeTestC;
+        res.emergP += st2.emergP; res.emergC += st2.emergC;
+        res.groupP += st2.groupP; res.groupC += st2.groupC;
+        res.callC += st2.callC;
+        
+        var dicts = ['gender', 'age', 'rank', 'job', 'life_gender', 'life_rank', 'method', 'place', 'path', 'prevExp', 'stress', 'problem', 'action'];
+        dicts.forEach(function(d) {
+          for(var k in st2[d]) res[d][k] = (res[d][k] || 0) + st2[d][k];
+        });
+        return res;
+      }
+
+      function processData(res) {
+        if(!res || !res.success) { alert("데이터 처리 실패: " + res.message); return; }
+        
+        var q1 = res.data.q1, q2 = res.data.q2, q3 = res.data.q3, q4 = res.data.q4;
+        var cum2 = addStats(q1, q2);
+        var cum3 = addStats(cum2, q3);
+        var cum4 = addStats(cum3, q4);
+        
+        renderTab3(q1, q2, q3, q4, cum4, res.data.over4Total);
+        renderTab2(q1, cum2, cum3, cum4);
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('dashboard-body').style.display = 'block';
+      }
+
+      function renderTab3(q1, q2, q3, q4, tot, over4) {
+        var html = "";
+        var metrics = [
+          { label: "전체상담인원(명)", key: "totalP" }, { label: "전체상담횟수(회)", key: "totalC" },
+          { label: "스크리닝 상담(명)", key: "screenP" }, { label: "스크리닝 상담(회)", key: "screenC" },
+          { label: "심층상담(명)", key: "indepthP" }, { label: "심층상담(회)", key: "indepthC" },
+          { label: "생애주기별 심리상담(명)", key: "lifeP" }, { label: "생애주기별 심리상담(회)", key: "lifeC" },
+          { label: "생애주기별 심리검사(회)", key: "lifeTestC" }
+        ];
+
+        metrics.forEach(function(m) {
+          html += "<tr><td class='text-left'>" + m.label + "</td>";
+          html += "<td>" + q1[m.key] + "</td><td>" + q2[m.key] + "</td><td>" + q3[m.key] + "</td><td>" + q4[m.key] + "</td><td>" + tot[m.key] + "</td></tr>";
+        });
+        
+        html += "<tr style='background-color:#fef8e3;'><td class='text-left'>4회기 이상 상담인원(명)</td><td colspan='4'>-</td><td style='color:#d32f2f;'>" + over4 + "</td></tr>";
+        
+        var m2 = [
+          { label: "긴급 심리 지원(명)", key: "emergP" }, { label: "긴급 심리 지원(회)", key: "emergC" },
+          { label: "집단상담(회)", key: "groupC" }, { label: "집단상담(명)", key: "groupP" },
+          { label: "24시간 콜센터 대응건수(건)", key: "callC" }
+        ];
+
+        m2.forEach(function(m) {
+          html += "<tr><td class='text-left'>" + m.label + "</td>";
+          html += "<td>" + q1[m.key] + "</td><td>" + q2[m.key] + "</td><td>" + q3[m.key] + "</td><td>" + q4[m.key] + "</td><td>" + tot[m.key] + "</td></tr>";
+        });
+
+        document.getElementById('tbody-tab3').innerHTML = html;
+      }
+
+      function renderTab2(q1, cum2, cum3, cum4) {
+        var rowsData = [ {title:"1분기", d:q1}, {title:"1~2분기", d:cum2}, {title:"1~3분기", d:cum3}, {title:"1~4분기", d:cum4} ];
+        
+        var html1 = "", html2 = "", html3 = "", html4 = "", html5 = "", html6 = "";
+        
+        rowsData.forEach(function(row) {
+          var d = row.d;
+          
+          html1 += "<tr>";
+          html1 += "<td>" + row.title + "</td><td>" + d.totalC + "</td>";
+          html1 += "<td>" + (d.gender['남']||0) + "</td><td>" + (d.gender['여']||0) + "</td>";
+          html1 += "<td>" + (d.age['20대']||0) + "</td><td>" + (d.age['30대']||0) + "</td><td>" + (d.age['40대']||0) + "</td><td>" + (d.age['50대']||0) + "</td><td>" + (d.age['60대 이상']||0) + "</td>";
+          html1 += "<td>" + (d.rank['소방사']||0) + "</td><td>" + (d.rank['소방교']||0) + "</td><td>" + (d.rank['소방장']||0) + "</td><td>" + (d.rank['소방위']||0) + "</td><td>" + (d.rank['소방경']||0) + "</td><td>" + (d.rank['소방령']||0) + "</td><td>" + (d.rank['소방정']||0) + "</td><td>" + (d.rank['소방보조인력']||0) + "</td>";
+          html1 += "<td>" + (d.job['1']||0) + "</td><td>" + (d.job['2']||0) + "</td><td>" + (d.job['3']||0) + "</td><td>" + (d.job['4']||0) + "</td><td>" + (d.job['5']||0) + "</td><td>" + (d.job['6']||0) + "</td><td>" + (d.job['7']||0) + "</td><td>" + (d.job['8']||0) + "</td>";
+          html1 += "</tr>";
+
+          html2 += "<tr>";
+          html2 += "<td>" + row.title + "</td><td>" + d.lifeC + "</td>";
+          html2 += "<td>" + (d.life_gender['남']||0) + "</td><td>" + (d.life_gender['여']||0) + "</td>";
+          html2 += "<td>" + (d.life_rank['소방사']||0) + "</td><td>" + (d.life_rank['소방교']||0) + "</td><td>" + (d.life_rank['소방장']||0) + "</td><td>" + (d.life_rank['소방위']||0) + "</td><td>" + (d.life_rank['소방경']||0) + "</td>";
+          html2 += "<td>" + d.lifeTestC + "</td>";
+          html2 += "</tr>";
+
+          html3 += "<tr>";
+          html3 += "<td>" + row.title + "</td>";
+          html3 += "<td>" + (d.method['1']||0) + "</td><td>" + (d.method['2']||0) + "</td><td>" + (d.method['3']||0) + "</td><td>" + (d.method['4']||0) + "</td><td>" + (d.method['5']||0) + "</td>";
+          html3 += "<td>" + (d.place['1']||0) + "</td><td>" + (d.place['2']||0) + "</td><td>" + (d.place['3']||0) + "</td><td>" + (d.place['4']||0) + "</td><td>" + (d.place['5']||0) + "</td>";
+          html3 += "<td>" + (d.path['2']||0) + "</td><td>" + (d.path['3']||0) + "</td><td>" + (d.path['4']||0) + "</td><td>" + (d.path['1']||0) + "</td><td>" + (d.path['5']||0) + "</td><td>" + (d.path['6']||0) + "</td>";
+          html3 += "<td>" + (d.prevExp['1']||0) + "</td><td>" + (d.prevExp['2-1']||0) + "</td><td>" + (d.prevExp['2-2']||0) + "</td><td>" + (d.prevExp['2-3']||0) + "</td><td>" + (d.prevExp['2-4']||0) + "</td><td>" + (d.prevExp['2-5']||0) + "</td>";
+          html3 += "</tr>";
+
+          html4 += "<tr>";
+          html4 += "<td>" + row.title + "</td>";
+          for(var i=1; i<=11; i++) html4 += "<td>" + (d.problem[i]||0) + "</td>";
+          html4 += "</tr>";
+
+          html5 += "<tr>";
+          html5 += "<td>" + row.title + "</td>";
+          for(var i=1; i<=6; i++) html5 += "<td>" + (d.action[i]||0) + "</td>";
+          html5 += "</tr>";
+
+          html6 += "<tr>";
+          html6 += "<td>" + row.title + "</td>";
+          for(var i=1; i<=13; i++) html6 += "<td>" + (d.stress['1-'+i]||0) + "</td>";
+          for(var i=1; i<=5; i++) html6 += "<td>" + (d.stress['2-'+i]||0) + "</td>";
+          html6 += "<td>" + (d.stress['3-1']||0) + "</td><td>" + (d.stress['3-2']||0) + "</td>";
+          for(var i=1; i<=4; i++) html6 += "<td>" + (d.stress['4-'+i]||0) + "</td>";
+          for(var i=1; i<=5; i++) html6 += "<td>" + (d.stress['5-'+i]||0) + "</td>";
+          html6 += "<td>" + (d.stress['6']||0) + "</td>";
+          html6 += "</tr>";
+        });
+        
+        document.getElementById('tbody-basic').innerHTML = html1;
+        document.getElementById('tbody-life').innerHTML = html2;
+        document.getElementById('tbody-method').innerHTML = html3;
+        document.getElementById('tbody-problem').innerHTML = html4;
+        document.getElementById('tbody-action').innerHTML = html5;
+        document.getElementById('tbody-stress').innerHTML = html6;
+      }
+
+      function showTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+        document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+        document.getElementById(tabId).classList.add('active');
+        event.target.classList.add('active');
+      }
+
+      function goBack() {
+        document.body.innerHTML = "<div class='app-wrapper'><div id='loading'>대시보드로 돌아갑니다...</div></div>";
+        google.script.run.withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); }).loadDashboard(APP_REGION, APP_USER);
+      }
+    </script>
+  </head>
+  <body>
+    <div class="app-wrapper">
+      <div class="container">
+        <div class="header">
+          <h2>관리자 통계 보고서 (<?= region ?>)</h2>
+          <button class="btn-back" onclick="goBack()">대시보드로 돌아가기</button>
+        </div>
+
+        <div class="controls">
+          <select id="yearSelect"></select>
+          <button class="btn-calc" onclick="loadData()">통계 산출하기</button>
+        </div>
+
+        <div id="loading">수십 가지 항목의 교차 통계를 실시간으로 산출하고 있습니다...</div>
+
+        <div id="dashboard-body" class="dashboard-body">
+          <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('tab-annual')">3번째 탭: 연간요약</button>
+            <button class="tab-btn" onclick="showTab('tab-counsel')">2번째 탭: 상담실적(누적)</button>
+          </div>
+
+          <div id="tab-annual" class="tab-content active">
+            <h3>Ⅰ. 상담영역 (연간 요약)</h3>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="text-left" style="width:25%">지표</th>
+                    <th>1분기</th><th>2분기</th><th>3분기</th><th>4분기</th><th>연간 합계</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-tab3"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="tab-counsel" class="tab-content">
+            <h3>Ⅱ-1. 기본 정보 (성별/연령/계급/직무)</h3>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th rowspan="2">구분</th><th rowspan="2">총계</th>
+                    <th colspan="2">성별</th><th colspan="5">연령</th><th colspan="8">계급</th><th colspan="8">직무</th>
+                  </tr>
+                  <tr>
+                    <th>남</th><th>여</th>
+                    <th>20대</th><th>30대</th><th>40대</th><th>50대</th><th>60대↑</th>
+                    <th>사</th><th>교</th><th>장</th><th>위</th><th>경</th><th>령</th><th>정</th><th>보조</th>
+                    <th>진압</th><th>화재운전</th><th>구조</th><th>구급</th><th>상황실</th><th>화재조사</th><th>행정</th><th>기타</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-basic"></tbody>
+              </table>
+            </div>
+
+            <h3>Ⅱ-2. 생애주기별 상담 세부 (성별/계급/심리검사)</h3>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th rowspan="2">구분</th><th rowspan="2">총계</th>
+                    <th colspan="2">성별</th><th colspan="5">계급</th><th rowspan="2">심리검사(회)</th>
+                  </tr>
+                  <tr>
+                    <th>남</th><th>여</th>
+                    <th>사</th><th>교</th><th>장</th><th>위</th><th>경</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-life"></tbody>
+              </table>
+            </div>
+
+            <h3>Ⅱ-3. 상담 방식/장소/경로/기존경험</h3>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th rowspan="2">구분</th>
+                    <th colspan="5">상담방식</th><th colspan="5">상담장소</th><th colspan="6">유입 경로</th><th colspan="6">기존 상담 경험</th>
+                  </tr>
+                  <tr>
+                    <th>대면</th><th>전화</th><th>화상</th><th>메신저</th><th>기타</th>
+                    <th>센터내</th><th>소방서내</th><th>타센터</th><th>상담시설</th><th>기타</th>
+                    <th>본인</th><th>상급자</th><th>동료</th><th>의무</th><th>상담사</th><th>기타</th>
+                    <th>없음</th><th>찾상만</th><th>개인기관</th><th>정신과</th><th>유관기관</th><th>기타</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-method"></tbody>
+              </table>
+            </div>
+
+            <h3>Ⅱ-4. 피상담자 문제유형 (중복체크 합산)</h3>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>구분</th><th>정상</th><th>PTSD</th><th>우울감</th><th>수면문제</th><th>물질중독</th><th>행위중독</th><th>자살관련</th><th>불안장애</th><th>정신증</th><th>직무스트레스</th><th>기타</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-problem"></tbody>
+              </table>
+            </div>
+
+            <h3>Ⅱ-5. 주요 조치</h3>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>구분</th><th>지속관리</th><th>정신과 연계</th><th>전문기관 연계</th><th>정서지지/대처</th><th>기타조치</th><th>상담종료</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-action"></tbody>
+              </table>
+            </div>
+
+            <h3>Ⅱ-6. 주요 스트레스원 세부 분석</h3>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th rowspan="2">구분</th>
+                    <th colspan="13">1. 조직 및 직무환경</th>
+                    <th colspan="5">2. 직장내 관계/갈등</th>
+                    <th colspan="2">3. 외상사건</th>
+                    <th colspan="4">4. 개인생활/환경</th>
+                    <th colspan="5">5. 가족/대인관계</th>
+                    <th rowspan="2">6.기타</th>
+                  </tr>
+                  <tr>
+                    <th>1-1</th><th>1-2</th><th>1-3</th><th>1-4</th><th>1-5</th><th>1-6</th><th>1-7</th><th>1-8</th><th>1-9</th><th>1-10</th><th>1-11</th><th>1-12</th><th>1-13</th>
+                    <th>2-1</th><th>2-2</th><th>2-3</th><th>2-4</th><th>2-5</th>
+                    <th>3-1</th><th>3-2</th>
+                    <th>4-1</th><th>4-2</th><th>4-3</th><th>4-4</th>
+                    <th>5-1</th><th>5-2</th><th>5-3</th><th>5-4</th><th>5-5</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-stress"></tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
