@@ -11,7 +11,7 @@ html, body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f7f6
 .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4CAF50; padding-bottom: 15px; margin-bottom: 20px; }
 .header h2 { margin: 0; color: #2c3e50; font-weight: normal; }
 .btn-back { background-color: #757575; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; }
-.controls { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; }
+.controls { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
 .controls select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 15px; }
 .btn-calc { background-color: #2196F3; color: white; padding: 8px 20px; border: none; border-radius: 4px; cursor: pointer; }
 .tabs { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 1px solid #ccc; }
@@ -28,75 +28,119 @@ th { background-color: #f5f5f5; color: #333; position: sticky; top: 0; }
 .dashboard-body { display: none; }
 h3 { color: #1b5e20; margin-top: 10px; margin-bottom: 10px; font-weight: normal; }
 
-/* ─── 차트 탭 전용 스타일 ─── */
-.chart-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-bottom: 30px;
-}
-.chart-grid.single { grid-template-columns: 1fr; }
-.chart-card {
-  background: #fafafa;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 20px;
-}
-.chart-card h4 {
-  margin: 0 0 14px 0;
-  font-size: 14px;
-  color: #2c3e50;
-  border-left: 4px solid #4CAF50;
-  padding-left: 10px;
-  font-weight: bold;
-}
-.chart-wrap { position: relative; }
+/* ─── 차트 탭 ─── */
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.chart-card { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; position: relative; }
+.chart-card h4 { margin: 0 0 10px 0; font-size: 14px; color: #2c3e50; border-left: 4px solid #4CAF50; padding-left: 10px; font-weight: bold; }
 .chart-wrap canvas { max-width: 100%; }
-.summary-row {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-}
-.summary-card {
-  flex: 1;
-  min-width: 140px;
-  background: linear-gradient(135deg, #4CAF50 0%, #2e7d32 100%);
-  border-radius: 8px;
-  padding: 16px;
-  color: white;
-  text-align: center;
-}
-.summary-card.blue { background: linear-gradient(135deg, #2196F3 0%, #1565C0 100%); }
-.summary-card.orange { background: linear-gradient(135deg, #FF9800 0%, #E65100 100%); }
-.summary-card.purple { background: linear-gradient(135deg, #9C27B0 0%, #6A1B9A 100%); }
-.summary-card .num { font-size: 28px; font-weight: bold; }
-.summary-card .lbl { font-size: 12px; margin-top: 4px; opacity: 0.9; }
-@media(max-width:768px) {
+.summary-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.summary-card { flex: 1; min-width: 130px; background: linear-gradient(135deg, #4CAF50, #2e7d32); border-radius: 8px; padding: 14px; color: white; text-align: center; }
+.summary-card.blue   { background: linear-gradient(135deg, #2196F3, #1565C0); }
+.summary-card.orange { background: linear-gradient(135deg, #FF9800, #E65100); }
+.summary-card.purple { background: linear-gradient(135deg, #9C27B0, #6A1B9A); }
+.summary-card .num { font-size: 26px; font-weight: bold; }
+.summary-card .lbl { font-size: 11px; margin-top: 4px; opacity: 0.9; }
+
+/* ─── 그래프 + 빈도표 나란히 ─── */
+.chart-and-table { display: flex; gap: 10px; align-items: flex-start; }
+.chart-side { flex: 0 0 56%; min-width: 0; }
+.table-side { flex: 1; min-width: 0; overflow-x: auto; }
+
+/* ─── 빈도표 ─── */
+.freq-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.freq-tbl th { background: #e8f5e9; color: #1b5e20; padding: 4px 6px; border: 1px solid #c8e6c9; font-weight: bold; text-align: center; }
+.freq-tbl td { padding: 3px 6px; border: 1px solid #e0e0e0; text-align: right; }
+.freq-tbl td:first-child { text-align: left; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.freq-tbl tr.total-row td { background: #f5f5f5; font-weight: bold; }
+
+/* ─── 복사 버튼 ─── */
+.btn-copy { position: absolute; top: 10px; right: 10px; background: #eeeeee; color: #555; border: 1px solid #ccc; border-radius: 3px; padding: 2px 8px; font-size: 11px; cursor: pointer; z-index: 5; }
+.btn-copy:hover { background: #bdbdbd; }
+
+/* ─── 빈 데이터 ─── */
+.no-data-box { text-align: center; padding: 40px 20px; color: #999; font-size: 15px; background: #fafafa; border-radius: 8px; border: 1px dashed #ddd; margin-bottom: 20px; }
+
+/* ─── 월 범위 선택기 ─── */
+.month-range-bar { display: flex; gap: 8px; align-items: center; background: #e8f5e9; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.month-range-bar label { font-size: 14px; color: #2e7d32; font-weight: bold; }
+.month-range-bar select { padding: 5px 8px; border: 1px solid #a5d6a7; border-radius: 4px; font-size: 14px; }
+.btn-apply { background: #2e7d32; color: white; padding: 6px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+.range-hint { font-size: 12px; color: #777; font-style: italic; }
+
+/* ─── 관서 대상자 설정 ─── */
+.station-config { background: #fff8e1; border: 1px solid #ffe082; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; }
+.station-config summary { cursor: pointer; font-size: 13px; color: #e65100; font-weight: bold; }
+.station-config[open] summary { margin-bottom: 8px; }
+.station-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 5px; margin-top: 6px; }
+.station-row { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.station-row label { flex: 1; white-space: nowrap; color: #333; }
+.station-row input[type=number] { width: 58px; padding: 2px 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px; text-align: right; }
+.btn-station-save { margin-top: 8px; background: #f57c00; color: white; border: none; border-radius: 4px; padding: 5px 14px; font-size: 13px; cursor: pointer; }
+
+@media(max-width:768px){
   .chart-grid { grid-template-columns: 1fr; }
+  .chart-and-table { flex-direction: column; }
+  .chart-side { flex: none; width: 100%; }
 }
 </style>
 
 <script>
 var APP_REGION = "<?= region ?>";
-var APP_USER = "<?= userName ?>";
+var APP_USER   = "<?= userName ?>";
 var _chartInstances = {};
 var _chartDataCache = null;
-var _chartsRendered = false;
+
+/* PDF 기준 관서별 전체 대상자 수 — 설정 패널에서 수정 가능 */
+var STATION_TARGETS = {
+  "본부": 288,
+  "거제소방서": 319, "거창소방서": 181, "고성소방서": 173,
+  "김해동부소방서": 302, "김해서부소방서": 277, "남해소방서": 153,
+  "밀양소방서": 254, "사천소방서": 229, "산청소방서": 169,
+  "양산소방서": 340, "의령소방서": 128, "진주소방서": 335,
+  "창녕소방서": 201, "통영소방서": 231, "하동소방서": 198,
+  "함안소방서": 205, "함양소방서": 164, "합천소방서": 197
+};
 
 window.onload = function() {
   var currentYear = new Date().getFullYear();
   var sel = document.getElementById('yearSelect');
-  for(var y = currentYear - 1; y <= currentYear + 2; y++) {
-    var opt = document.createElement('option'); opt.value = y; opt.text = y + "년";
-    if(y === currentYear) opt.selected = true;
+  for (var y = currentYear - 1; y <= currentYear + 2; y++) {
+    var opt = document.createElement('option'); opt.value = y; opt.text = y + '년';
+    if (y === currentYear) opt.selected = true;
     sel.add(opt);
   }
+  ['startMonthSelect','endMonthSelect'].forEach(function(id, idx) {
+    var s = document.getElementById(id);
+    for (var m = 1; m <= 12; m++) {
+      var o = document.createElement('option'); o.value = m; o.text = m + '월'; s.add(o);
+    }
+    if (idx === 1) s.value = 12;
+  });
+  buildStationInputs();
   loadData();
 };
 
+function buildStationInputs() {
+  var grid = document.getElementById('station-input-grid');
+  Object.keys(STATION_TARGETS).forEach(function(name) {
+    var row = document.createElement('div'); row.className = 'station-row';
+    row.innerHTML = '<label>' + name + '</label>' +
+      '<input type="number" id="si_' + name + '" value="' + STATION_TARGETS[name] + '" min="0">';
+    grid.appendChild(row);
+  });
+}
+
+function saveStationTargets() {
+  Object.keys(STATION_TARGETS).forEach(function(name) {
+    var el = document.getElementById('si_' + name);
+    if (el) STATION_TARGETS[name] = parseInt(el.value) || 0;
+  });
+  // 저장 후 즉시 소방서 섹션 재렌더
+  if (_chartDataCache) renderStationSection();
+  alert('저장되었습니다.');
+}
+
 function loadData() {
-  _chartsRendered = false;
   document.getElementById('loading').style.display = 'block';
   document.getElementById('dashboard-body').style.display = 'none';
   var year = document.getElementById('yearSelect').value;
@@ -105,255 +149,333 @@ function loadData() {
 
 function addStats(st1, st2) {
   var res = JSON.parse(JSON.stringify(st1));
-  res.totalP += st2.totalP; res.totalC += st2.totalC;
-  res.screenP += st2.screenP; res.screenC += st2.screenC;
-  res.indepthP += st2.indepthP; res.indepthC += st2.indepthC;
-  res.lifeP += st2.lifeP; res.lifeC += st2.lifeC; res.lifeTestC += st2.lifeTestC;
-  res.emergP += st2.emergP; res.emergC += st2.emergC;
-  res.groupP += st2.groupP; res.groupC += st2.groupC;
-  res.callC += st2.callC;
-  var dicts = ['gender', 'age', 'rank', 'job', 'life_gender', 'life_rank', 'method', 'place', 'path', 'prevExp', 'stress', 'problem', 'action'];
-  dicts.forEach(function(d) {
-    for(var k in st2[d]) res[d][k] = (res[d][k] || 0) + st2[d][k];
-  });
+  res.totalP+=st2.totalP; res.totalC+=st2.totalC;
+  res.screenP+=st2.screenP; res.screenC+=st2.screenC;
+  res.indepthP+=st2.indepthP; res.indepthC+=st2.indepthC;
+  res.lifeP+=st2.lifeP; res.lifeC+=st2.lifeC; res.lifeTestC+=st2.lifeTestC;
+  res.emergP+=st2.emergP; res.emergC+=st2.emergC;
+  res.groupP+=st2.groupP; res.groupC+=st2.groupC;
+  res.callC+=st2.callC;
+  ['gender','age','rank','job','life_gender','life_rank','method','place','path','prevExp','stress','problem','action']
+    .forEach(function(d){ for(var k in st2[d]) res[d][k]=(res[d][k]||0)+st2[d][k]; });
   return res;
 }
 
+function makeEmptyStats() {
+  var dicts={};
+  ['gender','age','rank','job','life_gender','life_rank','method','place','path','prevExp','stress','problem','action']
+    .forEach(function(d){ dicts[d]={}; });
+  return Object.assign({totalP:0,totalC:0,screenP:0,screenC:0,indepthP:0,indepthC:0,
+    lifeP:0,lifeC:0,lifeTestC:0,emergP:0,emergC:0,groupP:0,groupC:0,callC:0},dicts);
+}
+
+function isEmptyStats(tot) {
+  return tot.totalC===0 && tot.screenC===0 && tot.indepthC===0 && tot.emergC===0;
+}
+
 function processData(res) {
-  if(!res || !res.success) { alert("데이터 처리 실패: " + res.message); return; }
-  var q1 = res.data.q1, q2 = res.data.q2, q3 = res.data.q3, q4 = res.data.q4;
-  var cum2 = addStats(q1, q2);
-  var cum3 = addStats(cum2, q3);
-  var cum4 = addStats(cum3, q4);
-  _chartDataCache = { q1:q1, q2:q2, q3:q3, q4:q4, cum4:cum4, over4Total: res.data.over4Total };
-  renderTab3(q1, q2, q3, q4, cum4, res.data.over4Total);
-  renderTab2(q1, cum2, cum3, cum4);
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('dashboard-body').style.display = 'block';
+  if (!res||!res.success) { alert('데이터 처리 실패: '+res.message); return; }
+  var q1=res.data.q1, q2=res.data.q2, q3=res.data.q3, q4=res.data.q4;
+  var cum2=addStats(q1,q2), cum3=addStats(cum2,q3), cum4=addStats(cum3,q4);
+  _chartDataCache = {
+    q1:q1,q2:q2,q3:q3,q4:q4,cum4:cum4,
+    over4Total:res.data.over4Total,
+    monthly:res.data.monthly||null,
+    stationDone:res.data.stationDone||null  // { "소방서명": 완료건수 }
+  };
+  renderTab3(q1,q2,q3,q4,cum4,res.data.over4Total);
+  renderTab2(q1,cum2,cum3,cum4);
+  document.getElementById('loading').style.display='none';
+  document.getElementById('dashboard-body').style.display='block';
 }
 
-function renderTab3(q1, q2, q3, q4, tot, over4) {
-  var html = "";
-  var metrics = [
-    { label: "전체상담인원(명)", key: "totalP" }, { label: "전체상담횟수(회)", key: "totalC" },
-    { label: "스크리닝 상담(명)", key: "screenP" }, { label: "스크리닝 상담(회)", key: "screenC" },
-    { label: "심층상담(명)", key: "indepthP" }, { label: "심층상담(회)", key: "indepthC" },
-    { label: "생애주기별 심리상담(명)", key: "lifeP" }, { label: "생애주기별 심리상담(회)", key: "lifeC" },
-    { label: "생애주기별 심리검사(회)", key: "lifeTestC" }
-  ];
-  metrics.forEach(function(m) {
-    html += "<tr><td class='text-left'>" + m.label + "</td>";
-    html += "<td>" + q1[m.key] + "</td><td>" + q2[m.key] + "</td><td>" + q3[m.key] + "</td><td>" + q4[m.key] + "</td><td>" + tot[m.key] + "</td></tr>";
+/* ─── 탭1 ─── */
+function renderTab3(q1,q2,q3,q4,tot,over4) {
+  var html='';
+  [{label:'전체상담인원(명)',key:'totalP'},{label:'전체상담횟수(회)',key:'totalC'},
+   {label:'스크리닝 상담(명)',key:'screenP'},{label:'스크리닝 상담(회)',key:'screenC'},
+   {label:'심층상담(명)',key:'indepthP'},{label:'심층상담(회)',key:'indepthC'},
+   {label:'생애주기별 심리상담(명)',key:'lifeP'},{label:'생애주기별 심리상담(회)',key:'lifeC'},
+   {label:'생애주기별 심리검사(회)',key:'lifeTestC'}
+  ].forEach(function(m){
+    html+='<tr><td class="text-left">'+m.label+'</td>';
+    html+='<td>'+q1[m.key]+'</td><td>'+q2[m.key]+'</td><td>'+q3[m.key]+'</td><td>'+q4[m.key]+'</td><td>'+tot[m.key]+'</td></tr>';
   });
-  html += "<tr style='background-color:#fef8e3;'><td class='text-left'>4회기 이상 상담인원(명)</td><td colspan='4'>-</td><td style='color:#d32f2f;'>" + over4 + "</td></tr>";
-  var m2 = [
-    { label: "긴급 심리 지원(명)", key: "emergP" }, { label: "긴급 심리 지원(회)", key: "emergC" },
-    { label: "집단상담(회)", key: "groupC" }, { label: "집단상담(명)", key: "groupP" },
-    { label: "24시간 콜센터 대응건수(건)", key: "callC" }
-  ];
-  m2.forEach(function(m) {
-    html += "<tr><td class='text-left'>" + m.label + "</td>";
-    html += "<td>" + q1[m.key] + "</td><td>" + q2[m.key] + "</td><td>" + q3[m.key] + "</td><td>" + q4[m.key] + "</td><td>" + tot[m.key] + "</td></tr>";
+  html+='<tr style="background:#fef8e3"><td class="text-left">4회기 이상 상담인원(명)</td><td colspan="4">-</td><td style="color:#d32f2f">'+over4+'</td></tr>';
+  [{label:'긴급 심리 지원(명)',key:'emergP'},{label:'긴급 심리 지원(회)',key:'emergC'},
+   {label:'집단상담(회)',key:'groupC'},{label:'집단상담(명)',key:'groupP'},
+   {label:'24시간 콜센터 대응건수(건)',key:'callC'}
+  ].forEach(function(m){
+    html+='<tr><td class="text-left">'+m.label+'</td>';
+    html+='<td>'+q1[m.key]+'</td><td>'+q2[m.key]+'</td><td>'+q3[m.key]+'</td><td>'+q4[m.key]+'</td><td>'+tot[m.key]+'</td></tr>';
   });
-  document.getElementById('tbody-tab3').innerHTML = html;
+  document.getElementById('tbody-tab3').innerHTML=html;
 }
 
-function renderTab2(q1, cum2, cum3, cum4) {
-  var rowsData = [ {title:"1분기", d:q1}, {title:"1~2분기", d:cum2}, {title:"1~3분기", d:cum3}, {title:"1~4분기", d:cum4} ];
-  var html1 = "", html2 = "", html3 = "", html4 = "", html5 = "", html6 = "";
-  rowsData.forEach(function(row) {
-    var d = row.d;
-    html1 += "<tr>";
-    html1 += "<td>" + row.title + "</td><td>" + d.totalC + "</td>";
-    html1 += "<td>" + (d.gender['남']||0) + "</td><td>" + (d.gender['여']||0) + "</td>";
-    html1 += "<td>" + (d.age['20대']||0) + "</td><td>" + (d.age['30대']||0) + "</td><td>" + (d.age['40대']||0) + "</td><td>" + (d.age['50대']||0) + "</td><td>" + (d.age['60대 이상']||0) + "</td>";
-    html1 += "<td>" + (d.rank['소방사']||0) + "</td><td>" + (d.rank['소방교']||0) + "</td><td>" + (d.rank['소방장']||0) + "</td><td>" + (d.rank['소방위']||0) + "</td><td>" + (d.rank['소방경']||0) + "</td><td>" + (d.rank['소방령']||0) + "</td><td>" + (d.rank['소방정']||0) + "</td><td>" + (d.rank['소방보조인력']||0) + "</td>";
-    html1 += "<td>" + (d.job['1']||0) + "</td><td>" + (d.job['2']||0) + "</td><td>" + (d.job['3']||0) + "</td><td>" + (d.job['4']||0) + "</td><td>" + (d.job['5']||0) + "</td><td>" + (d.job['6']||0) + "</td><td>" + (d.job['7']||0) + "</td><td>" + (d.job['8']||0) + "</td>";
-    html1 += "</tr>";
-    html2 += "<tr>";
-    html2 += "<td>" + row.title + "</td><td>" + d.lifeC + "</td>";
-    html2 += "<td>" + (d.life_gender['남']||0) + "</td><td>" + (d.life_gender['여']||0) + "</td>";
-    html2 += "<td>" + (d.life_rank['소방사']||0) + "</td><td>" + (d.life_rank['소방교']||0) + "</td><td>" + (d.life_rank['소방장']||0) + "</td><td>" + (d.life_rank['소방위']||0) + "</td><td>" + (d.life_rank['소방경']||0) + "</td>";
-    html2 += "<td>" + d.lifeTestC + "</td>";
-    html2 += "</tr>";
-    html3 += "<tr>";
-    html3 += "<td>" + row.title + "</td>";
-    html3 += "<td>" + (d.method['1']||0) + "</td><td>" + (d.method['2']||0) + "</td><td>" + (d.method['3']||0) + "</td><td>" + (d.method['4']||0) + "</td><td>" + (d.method['5']||0) + "</td>";
-    html3 += "<td>" + (d.place['1']||0) + "</td><td>" + (d.place['2']||0) + "</td><td>" + (d.place['3']||0) + "</td><td>" + (d.place['4']||0) + "</td><td>" + (d.place['5']||0) + "</td>";
-    html3 += "<td>" + (d.path['2']||0) + "</td><td>" + (d.path['3']||0) + "</td><td>" + (d.path['4']||0) + "</td><td>" + (d.path['1']||0) + "</td><td>" + (d.path['5']||0) + "</td><td>" + (d.path['6']||0) + "</td>";
-    html3 += "<td>" + (d.prevExp['1']||0) + "</td><td>" + (d.prevExp['2-1']||0) + "</td><td>" + (d.prevExp['2-2']||0) + "</td><td>" + (d.prevExp['2-3']||0) + "</td><td>" + (d.prevExp['2-4']||0) + "</td><td>" + (d.prevExp['2-5']||0) + "</td>";
-    html3 += "</tr>";
-    html4 += "<tr>";
-    html4 += "<td>" + row.title + "</td>";
-    for(var i=1; i<=11; i++) html4 += "<td>" + (d.problem[i]||0) + "</td>";
-    html4 += "</tr>";
-    html5 += "<tr>";
-    html5 += "<td>" + row.title + "</td>";
-    for(var i=1; i<=6; i++) html5 += "<td>" + (d.action[i]||0) + "</td>";
-    html5 += "</tr>";
-    html6 += "<tr>";
-    html6 += "<td>" + row.title + "</td>";
-    for(var i=1; i<=13; i++) html6 += "<td>" + (d.stress['1-'+i]||0) + "</td>";
-    for(var i=1; i<=5; i++) html6 += "<td>" + (d.stress['2-'+i]||0) + "</td>";
-    html6 += "<td>" + (d.stress['3-1']||0) + "</td><td>" + (d.stress['3-2']||0) + "</td>";
-    for(var i=1; i<=4; i++) html6 += "<td>" + (d.stress['4-'+i]||0) + "</td>";
-    for(var i=1; i<=5; i++) html6 += "<td>" + (d.stress['5-'+i]||0) + "</td>";
-    html6 += "<td>" + (d.stress['6']||0) + "</td>";
-    html6 += "</tr>";
+/* ─── 탭2 ─── */
+function renderTab2(q1,cum2,cum3,cum4) {
+  var rows=[{title:'1분기',d:q1},{title:'1~2분기',d:cum2},{title:'1~3분기',d:cum3},{title:'1~4분기',d:cum4}];
+  var h1='',h2='',h3='',h4='',h5='',h6='';
+  rows.forEach(function(row){
+    var d=row.d;
+    h1+='<tr><td>'+row.title+'</td><td>'+d.totalC+'</td>';
+    h1+='<td>'+(d.gender['남']||0)+'</td><td>'+(d.gender['여']||0)+'</td>';
+    h1+='<td>'+(d.age['20대']||0)+'</td><td>'+(d.age['30대']||0)+'</td><td>'+(d.age['40대']||0)+'</td><td>'+(d.age['50대']||0)+'</td><td>'+(d.age['60대 이상']||0)+'</td>';
+    h1+='<td>'+(d.rank['소방사']||0)+'</td><td>'+(d.rank['소방교']||0)+'</td><td>'+(d.rank['소방장']||0)+'</td><td>'+(d.rank['소방위']||0)+'</td><td>'+(d.rank['소방경']||0)+'</td><td>'+(d.rank['소방령']||0)+'</td><td>'+(d.rank['소방정']||0)+'</td><td>'+(d.rank['소방보조인력']||0)+'</td>';
+    h1+='<td>'+(d.job['1']||0)+'</td><td>'+(d.job['2']||0)+'</td><td>'+(d.job['3']||0)+'</td><td>'+(d.job['4']||0)+'</td><td>'+(d.job['5']||0)+'</td><td>'+(d.job['6']||0)+'</td><td>'+(d.job['7']||0)+'</td><td>'+(d.job['8']||0)+'</td></tr>';
+    h2+='<tr><td>'+row.title+'</td><td>'+d.lifeC+'</td>';
+    h2+='<td>'+(d.life_gender['남']||0)+'</td><td>'+(d.life_gender['여']||0)+'</td>';
+    h2+='<td>'+(d.life_rank['소방사']||0)+'</td><td>'+(d.life_rank['소방교']||0)+'</td><td>'+(d.life_rank['소방장']||0)+'</td><td>'+(d.life_rank['소방위']||0)+'</td><td>'+(d.life_rank['소방경']||0)+'</td>';
+    h2+='<td>'+d.lifeTestC+'</td></tr>';
+    h3+='<tr><td>'+row.title+'</td>';
+    h3+='<td>'+(d.method['1']||0)+'</td><td>'+(d.method['2']||0)+'</td><td>'+(d.method['3']||0)+'</td><td>'+(d.method['4']||0)+'</td><td>'+(d.method['5']||0)+'</td>';
+    h3+='<td>'+(d.place['1']||0)+'</td><td>'+(d.place['2']||0)+'</td><td>'+(d.place['3']||0)+'</td><td>'+(d.place['4']||0)+'</td><td>'+(d.place['5']||0)+'</td>';
+    h3+='<td>'+(d.path['2']||0)+'</td><td>'+(d.path['3']||0)+'</td><td>'+(d.path['4']||0)+'</td><td>'+(d.path['1']||0)+'</td><td>'+(d.path['5']||0)+'</td><td>'+(d.path['6']||0)+'</td>';
+    h3+='<td>'+(d.prevExp['1']||0)+'</td><td>'+(d.prevExp['2-1']||0)+'</td><td>'+(d.prevExp['2-2']||0)+'</td><td>'+(d.prevExp['2-3']||0)+'</td><td>'+(d.prevExp['2-4']||0)+'</td><td>'+(d.prevExp['2-5']||0)+'</td></tr>';
+    h4+='<tr><td>'+row.title+'</td>';
+    for(var i=1;i<=11;i++) h4+='<td>'+(d.problem[i]||0)+'</td>';
+    h4+='</tr>';
+    h5+='<tr><td>'+row.title+'</td>';
+    for(var i=1;i<=6;i++) h5+='<td>'+(d.action[i]||0)+'</td>';
+    h5+='</tr>';
+    h6+='<tr><td>'+row.title+'</td>';
+    for(var i=1;i<=13;i++) h6+='<td>'+(d.stress['1-'+i]||0)+'</td>';
+    for(var i=1;i<=5;i++)  h6+='<td>'+(d.stress['2-'+i]||0)+'</td>';
+    h6+='<td>'+(d.stress['3-1']||0)+'</td><td>'+(d.stress['3-2']||0)+'</td>';
+    for(var i=1;i<=4;i++)  h6+='<td>'+(d.stress['4-'+i]||0)+'</td>';
+    for(var i=1;i<=5;i++)  h6+='<td>'+(d.stress['5-'+i]||0)+'</td>';
+    h6+='<td>'+(d.stress['6']||0)+'</td></tr>';
   });
-  document.getElementById('tbody-basic').innerHTML = html1;
-  document.getElementById('tbody-life').innerHTML = html2;
-  document.getElementById('tbody-method').innerHTML = html3;
-  document.getElementById('tbody-problem').innerHTML = html4;
-  document.getElementById('tbody-action').innerHTML = html5;
-  document.getElementById('tbody-stress').innerHTML = html6;
+  document.getElementById('tbody-basic').innerHTML=h1;
+  document.getElementById('tbody-life').innerHTML=h2;
+  document.getElementById('tbody-method').innerHTML=h3;
+  document.getElementById('tbody-problem').innerHTML=h4;
+  document.getElementById('tbody-action').innerHTML=h5;
+  document.getElementById('tbody-stress').innerHTML=h6;
 }
 
-/* ─────────────────────────────────────────
-   3번째 탭: 시각화 차트 렌더링
-───────────────────────────────────────── */
-function renderChartTab() {
-  if(_chartsRendered || !_chartDataCache) return;
-  _chartsRendered = true;
+/* ─── 탭3: 월 범위 적용 ─── */
+function applyMonthRange() {
+  if (!_chartDataCache) return;
+  var startM=parseInt(document.getElementById('startMonthSelect').value);
+  var endM=parseInt(document.getElementById('endMonthSelect').value);
+  if (startM>endM) { alert('시작월은 종료월보다 앞이어야 합니다.'); return; }
 
-  var q1 = _chartDataCache.q1, q2 = _chartDataCache.q2;
-  var q3 = _chartDataCache.q3, q4 = _chartDataCache.q4;
-  var tot = _chartDataCache.cum4;
-
-  // 요약 카드
-  document.getElementById('sc-total').textContent = tot.totalC.toLocaleString();
-  document.getElementById('sc-screen').textContent = tot.screenC.toLocaleString();
-  document.getElementById('sc-indepth').textContent = tot.indepthC.toLocaleString();
-  document.getElementById('sc-emerg').textContent = tot.emergC.toLocaleString();
-
-  var COLORS = ['#4CAF50','#2196F3','#FF9800','#9C27B0','#F44336','#00BCD4','#795548','#607D8B','#E91E63','#009688','#FF5722','#3F51B5'];
-
-  function makeChart(id, type, data, opts) {
-    if(_chartInstances[id]) { _chartInstances[id].destroy(); }
-    var ctx = document.getElementById(id).getContext('2d');
-    _chartInstances[id] = new Chart(ctx, { type: type, data: data, options: opts || {} });
+  var tot;
+  if (_chartDataCache.monthly) {
+    tot=null;
+    for (var m=startM;m<=endM;m++) {
+      var key='m'+m;
+      if (_chartDataCache.monthly[key])
+        tot = tot ? addStats(tot,_chartDataCache.monthly[key]) : JSON.parse(JSON.stringify(_chartDataCache.monthly[key]));
+    }
+    if (!tot) tot=makeEmptyStats();
+  } else {
+    // 분기 단위 근사
+    var parts=[];
+    if (startM<=3  && endM>=1)  parts.push(_chartDataCache.q1);
+    if (startM<=6  && endM>=4)  parts.push(_chartDataCache.q2);
+    if (startM<=9  && endM>=7)  parts.push(_chartDataCache.q3);
+    if (startM<=12 && endM>=10) parts.push(_chartDataCache.q4);
+    tot = parts.length ? parts.reduce(addStats) : makeEmptyStats();
   }
 
-  // 1. 분기별 상담 현황 (묶음 막대)
-  makeChart('chart-quarterly', 'bar', {
-    labels: ['1분기', '2분기', '3분기', '4분기'],
-    datasets: [
-      { label:'스크리닝', data:[q1.screenC, q2.screenC, q3.screenC, q4.screenC], backgroundColor:'#4CAF50' },
-      { label:'심층상담', data:[q1.indepthC, q2.indepthC, q3.indepthC, q4.indepthC], backgroundColor:'#2196F3' },
-      { label:'생애주기', data:[q1.lifeC, q2.lifeC, q3.lifeC, q4.lifeC], backgroundColor:'#FF9800' },
-      { label:'긴급지원', data:[q1.emergC, q2.emergC, q3.emergC, q4.emergC], backgroundColor:'#F44336' },
-      { label:'집단상담', data:[q1.groupC, q2.groupC, q3.groupC, q4.groupC], backgroundColor:'#9C27B0' }
-    ]
-  }, {
-    responsive:true, plugins:{ legend:{ position:'bottom' }, title:{ display:false } },
-    scales:{ x:{ stacked:false }, y:{ beginAtZero:true, ticks:{ stepSize:1 } } }
-  });
+  document.getElementById('chart-range-label').textContent = startM+'월 ~ '+endM+'월 기준';
 
-  // 2. 성별 분포 (도넛)
-  var gM = tot.gender['남']||0, gF = tot.gender['여']||0;
-  makeChart('chart-gender', 'doughnut', {
-    labels:['남', '여'],
-    datasets:[{ data:[gM, gF], backgroundColor:['#2196F3','#E91E63'], borderWidth:2 }]
-  }, {
-    responsive:true,
-    plugins:{ legend:{ position:'bottom' }, tooltip:{ callbacks:{ label: function(c){ var t=gM+gF; return c.label+': '+c.raw+'명 ('+Math.round(c.raw/t*100)+'%)'; } } } }
-  });
-
-  // 3. 연령대 분포 (막대)
-  var ageKeys = ['20대','30대','40대','50대','60대 이상'];
-  makeChart('chart-age', 'bar', {
-    labels: ageKeys,
-    datasets:[{ label:'상담횟수(회)', data: ageKeys.map(function(k){ return tot.age[k]||0; }), backgroundColor: COLORS, borderRadius:4 }]
-  }, {
-    responsive:true, plugins:{ legend:{ display:false } },
-    scales:{ y:{ beginAtZero:true } }
-  });
-
-  // 4. 계급별 분포 (가로 막대)
-  var rankKeys = ['소방사','소방교','소방장','소방위','소방경','소방령','소방정','소방보조인력'];
-  var rankVals = rankKeys.map(function(k){ return tot.rank[k]||0; });
-  var nonZeroRanks = rankKeys.filter(function(k,i){ return rankVals[i]>0; });
-  var nonZeroVals  = rankVals.filter(function(v){ return v>0; });
-  makeChart('chart-rank', 'bar', {
-    labels: nonZeroRanks,
-    datasets:[{ label:'상담횟수(회)', data: nonZeroVals, backgroundColor: COLORS, borderRadius:4 }]
-  }, {
-    indexAxis:'y', responsive:true, plugins:{ legend:{ display:false } },
-    scales:{ x:{ beginAtZero:true } }
-  });
-
-  // 5. 피상담자 문제유형 (막대)
-  var problemLabels = ['정상','PTSD','우울감','수면문제','물질중독','행위중독','자살관련','불안장애','정신증','직무스트레스','기타'];
-  var problemVals = [1,2,3,4,5,6,7,8,9,10,11].map(function(i){ return tot.problem[i]||0; });
-  makeChart('chart-problem', 'bar', {
-    labels: problemLabels,
-    datasets:[{ label:'건수(건)', data: problemVals,
-      backgroundColor: problemLabels.map(function(_,i){ return COLORS[i%COLORS.length]; }), borderRadius:4 }]
-  }, {
-    responsive:true, plugins:{ legend:{ display:false } },
-    scales:{ y:{ beginAtZero:true } }
-  });
-
-  // 6. 주요 스트레스원 TOP10 (가로 막대)
-  var stressMap = {
-    '1-1':'인사이동','1-2':'인사갈등','1-3':'역할갈등','1-4':'과중한책임','1-5':'업무량변화',
-    '1-6':'업무질변화','1-7':'업무불연속','1-8':'교대근무','1-9':'직무요구도','1-10':'직무자율성',
-    '1-11':'기술부족','1-12':'물리적환경','1-13':'감정노동',
-    '2-1':'상급자갈등','2-2':'동료갈등','2-3':'민원갈등','2-4':'동료지지부족','2-5':'직장내괴롭힘',
-    '3-1':'외상사건(현장)','3-2':'외상사건(간접)',
-    '4-1':'일가정불균형','4-2':'본인사건','4-3':'재정문제','4-4':'금전관계',
-    '5-1':'배우자갈등','5-2':'자녀사건','5-3':'부모사건','5-4':'가족관계','5-5':'타인관계',
-    '6':'기타'
-  };
-  var stressPairs = Object.keys(stressMap).map(function(k){
-    return { key:k, label:stressMap[k], val: tot.stress[k]||0 };
-  }).filter(function(p){ return p.val>0; }).sort(function(a,b){ return b.val-a.val; }).slice(0,10);
-
-  makeChart('chart-stress', 'bar', {
-    labels: stressPairs.map(function(p){ return p.label; }),
-    datasets:[{ label:'건수(건)', data: stressPairs.map(function(p){ return p.val; }),
-      backgroundColor: COLORS, borderRadius:4 }]
-  }, {
-    indexAxis:'y', responsive:true, plugins:{ legend:{ display:false } },
-    scales:{ x:{ beginAtZero:true } }
-  });
-
-  // 7. 상담 방법 (도넛)
-  var methodLabels = ['대면상담','전화상담','화상상담','메신저','기타'];
-  var methodVals   = [1,2,3,4,5].map(function(i){ return tot.method[i]||0; });
-  var mNonZ = methodLabels.filter(function(_,i){ return methodVals[i]>0; });
-  var mVNonZ= methodVals.filter(function(v){ return v>0; });
-  makeChart('chart-method', 'doughnut', {
-    labels: mNonZ,
-    datasets:[{ data: mVNonZ, backgroundColor: COLORS.slice(0,mNonZ.length), borderWidth:2 }]
-  }, {
-    responsive:true, plugins:{ legend:{ position:'bottom' } }
-  });
-
-  // 8. 상담 유입 경로 (막대)
-  var pathLabels = ['본인신청','상급자권유','동료권유','의무상담','상담사연결','기타'];
-  var pathKeys   = ['2','3','4','1','5','6'];
-  makeChart('chart-path', 'bar', {
-    labels: pathLabels,
-    datasets:[{ label:'건수(건)', data: pathKeys.map(function(k){ return tot.path[k]||0; }),
-      backgroundColor: COLORS, borderRadius:4 }]
-  }, {
-    responsive:true, plugins:{ legend:{ display:false } },
-    scales:{ y:{ beginAtZero:true } }
-  });
+  if (isEmptyStats(tot)) {
+    document.getElementById('no-data-notice').style.display='block';
+    document.getElementById('chart-body').style.display='none';
+    return;
+  }
+  document.getElementById('no-data-notice').style.display='none';
+  document.getElementById('chart-body').style.display='block';
+  renderChartContent(tot);
+  renderStationSection();
 }
 
 function showTab(tabId, btn) {
-  document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
-  document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.tab-content').forEach(function(el){el.classList.remove('active');});
+  document.querySelectorAll('.tab-btn').forEach(function(el){el.classList.remove('active');});
   document.getElementById(tabId).classList.add('active');
   btn.classList.add('active');
-  if(tabId === 'tab-charts') { renderChartTab(); }
+  if (tabId==='tab-charts') applyMonthRange();
 }
 
 function goBack() {
-  document.body.innerHTML = "<div class='app-wrapper'><div id='loading'>대시보드로 돌아갑니다...</div></div>";
-  google.script.run.withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); }).loadDashboard(APP_REGION, APP_USER);
+  document.body.innerHTML="<div class='app-wrapper'><div id='loading'>대시보드로 돌아갑니다...</div></div>";
+  google.script.run.withSuccessHandler(function(html){document.open();document.write(html);document.close();}).loadDashboard(APP_REGION,APP_USER);
+}
+
+/* ─── 소방서별 진행률 ─── */
+function renderStationSection() {
+  var stationDone=(_chartDataCache&&_chartDataCache.stationDone)||{};
+  var names=Object.keys(STATION_TARGETS).sort();
+  var rows=names.map(function(nm,idx){
+    var target=STATION_TARGETS[nm]||0;
+    var done=stationDone[nm]||0;
+    var pct=target>0?(done/target*100).toFixed(1):'-';
+    var color=pct==='-'?'#999':parseFloat(pct)>=100?'#1b5e20':parseFloat(pct)>=90?'#2e7d32':parseFloat(pct)>=80?'#E65100':'#b71c1c';
+    return {no:idx+1,name:nm,target:target,done:done,pct:pct,color:color};
+  });
+  var totT=rows.reduce(function(a,r){return a+r.target;},0);
+  var totD=rows.reduce(function(a,r){return a+r.done;},0);
+  var totP=totT>0?(totD/totT*100).toFixed(1):'-';
+
+  var thtml='<table class="freq-tbl" style="min-width:0;white-space:normal">' +
+    '<thead><tr><th>#</th><th style="text-align:left">소방서</th><th>대상자</th><th>완료</th><th>비율</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    thtml+='<tr><td style="text-align:center">'+r.no+'</td><td style="text-align:left">'+r.name+'</td>'+
+      '<td>'+r.target.toLocaleString()+'</td><td>'+r.done.toLocaleString()+'</td>'+
+      '<td style="color:'+r.color+';font-weight:bold;text-align:center">'+r.pct+(r.pct!=='-'?'%':'')+'</td></tr>';
+  });
+  thtml+='<tr class="total-row"><td colspan="2" style="text-align:center">전 체</td>'+
+    '<td>'+totT.toLocaleString()+'</td><td>'+totD.toLocaleString()+'</td>'+
+    '<td style="color:#1b5e20;font-weight:bold;text-align:center">'+totP+(totP!=='-'?'%':'')+'</td></tr>';
+  thtml+='</tbody></table>';
+  document.getElementById('station-freq').innerHTML=thtml;
+
+  if (_chartInstances['chart-station']) _chartInstances['chart-station'].destroy();
+  var ctx=document.getElementById('chart-station').getContext('2d');
+  _chartInstances['chart-station']=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:rows.map(function(r){return r.name;}),
+      datasets:[
+        {label:'완료(명)',data:rows.map(function(r){return r.done;}),backgroundColor:'#4CAF50',borderRadius:3},
+        {label:'대상자(명)',data:rows.map(function(r){return r.target;}),backgroundColor:'rgba(33,150,243,0.2)',borderRadius:3}
+      ]
+    },
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{beginAtZero:true}}}
+  });
+}
+
+/* ─── 복사 버튼 ─── */
+function copySection(cardId) {
+  var card=document.getElementById(cardId);
+  if (!card) return;
+  var tbl=card.querySelector('table');
+  var text='';
+  if (tbl) {
+    tbl.querySelectorAll('tr').forEach(function(tr){
+      var cols=[];
+      tr.querySelectorAll('th,td').forEach(function(td){cols.push(td.innerText.trim());});
+      text+=cols.join('\t')+'\n';
+    });
+  }
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(showCopyToast).catch(function(){fallbackCopy(text);});
+  } else { fallbackCopy(text); }
+}
+function fallbackCopy(text) {
+  var ta=document.createElement('textarea'); ta.value=text;
+  document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+  showCopyToast();
+}
+function showCopyToast() {
+  var t=document.getElementById('copy-toast'); t.style.opacity='1';
+  setTimeout(function(){t.style.opacity='0';},1600);
+}
+
+/* ─── 빈도표 헬퍼 ─── */
+var COLORS=['#4CAF50','#2196F3','#FF9800','#9C27B0','#F44336','#00BCD4','#795548','#607D8B','#E91E63','#009688','#FF5722','#3F51B5'];
+
+function makeChart(id,type,data,opts){
+  if (_chartInstances[id]) _chartInstances[id].destroy();
+  var el=document.getElementById(id); if(!el) return;
+  _chartInstances[id]=new Chart(el.getContext('2d'),{type:type,data:data,options:opts||{}});
+}
+
+function freqTable(id,rows){
+  var el=document.getElementById(id); if(!el) return;
+  var total=rows.reduce(function(s,r){return s+(r[1]||0);},0);
+  var html='<table class="freq-tbl"><thead><tr><th>구분</th><th>건수</th><th>비율</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    var pct=total>0?(r[1]/total*100).toFixed(1):'0.0';
+    html+='<tr><td>'+r[0]+'</td><td>'+(r[1]||0).toLocaleString()+'</td><td>'+pct+'%</td></tr>';
+  });
+  html+='<tr class="total-row"><td>전 체</td><td>'+total.toLocaleString()+'</td><td>100%</td></tr>';
+  html+='</tbody></table>';
+  el.innerHTML=html;
+}
+
+/* ─── 차트 렌더링 ─── */
+function renderChartContent(tot){
+  document.getElementById('sc-total').textContent=tot.totalC.toLocaleString();
+  document.getElementById('sc-screen').textContent=tot.screenC.toLocaleString();
+  document.getElementById('sc-indepth').textContent=tot.indepthC.toLocaleString();
+  document.getElementById('sc-emerg').textContent=tot.emergC.toLocaleString();
+
+  var q1=_chartDataCache.q1,q2=_chartDataCache.q2,q3=_chartDataCache.q3,q4=_chartDataCache.q4;
+
+  // ① 분기별 (연간 전체 기준 고정)
+  makeChart('chart-quarterly','bar',{
+    labels:['1분기','2분기','3분기','4분기'],
+    datasets:[
+      {label:'스크리닝',data:[q1.screenC,q2.screenC,q3.screenC,q4.screenC],backgroundColor:'#4CAF50'},
+      {label:'심층상담',data:[q1.indepthC,q2.indepthC,q3.indepthC,q4.indepthC],backgroundColor:'#2196F3'},
+      {label:'생애주기',data:[q1.lifeC,q2.lifeC,q3.lifeC,q4.lifeC],backgroundColor:'#FF9800'},
+      {label:'긴급지원',data:[q1.emergC,q2.emergC,q3.emergC,q4.emergC],backgroundColor:'#F44336'},
+      {label:'집단상담',data:[q1.groupC,q2.groupC,q3.groupC,q4.groupC],backgroundColor:'#9C27B0'}
+    ]
+  },{responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{stacked:false},y:{beginAtZero:true}}});
+
+  // ② 성별
+  var gM=tot.gender['남']||0,gF=tot.gender['여']||0;
+  makeChart('chart-gender','doughnut',{labels:['남','여'],datasets:[{data:[gM,gF],backgroundColor:['#2196F3','#E91E63'],borderWidth:2}]},
+    {responsive:true,plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:function(c){var t=gM+gF;return c.label+': '+c.raw+'명 ('+Math.round(c.raw/t*100)+'%)';}}}}}); 
+  freqTable('freq-gender',[['남',gM],['여',gF]]);
+
+  // ③ 연령대
+  var ageK=['20대','30대','40대','50대','60대 이상'];
+  makeChart('chart-age','bar',{labels:ageK,datasets:[{label:'명수',data:ageK.map(function(k){return tot.age[k]||0;}),backgroundColor:COLORS,borderRadius:4}]},
+    {responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}});
+  freqTable('freq-age',ageK.map(function(k){return [k,tot.age[k]||0];}));
+
+  // ④ 계급별
+  var rkK=['소방사','소방교','소방장','소방위','소방경','소방령','소방정','소방보조인력'];
+  var rkV=rkK.map(function(k){return tot.rank[k]||0;});
+  var nzRk=rkK.filter(function(k,i){return rkV[i]>0;}),nzRv=rkV.filter(function(v){return v>0;});
+  makeChart('chart-rank','bar',{labels:nzRk,datasets:[{label:'명수',data:nzRv,backgroundColor:COLORS,borderRadius:4}]},
+    {indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true}}});
+  freqTable('freq-rank',nzRk.map(function(k){return [k,tot.rank[k]||0];}));
+
+  // ⑤ 직무별
+  var jL=['화재진압','화재운전','구조','구급','상황실','화재조사','행정업무','기타'];
+  var jV=['1','2','3','4','5','6','7','8'].map(function(k){return tot.job[k]||0;});
+  makeChart('chart-job','bar',{labels:jL,datasets:[{label:'명수',data:jV,backgroundColor:COLORS,borderRadius:4}]},
+    {responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}});
+  freqTable('freq-job',jL.map(function(l,i){return [l,jV[i]];}));
+
+  // ⑥ 상담 방법
+  var mL=['대면상담','전화상담','화상상담','메신저','기타'];
+  var mV=[1,2,3,4,5].map(function(i){return tot.method[i]||0;});
+  var mNZ=mL.filter(function(_,i){return mV[i]>0;}),mVNZ=mV.filter(function(v){return v>0;});
+  makeChart('chart-method','doughnut',{labels:mNZ,datasets:[{data:mVNZ,backgroundColor:COLORS.slice(0,mNZ.length),borderWidth:2}]},
+    {responsive:true,plugins:{legend:{position:'bottom'}}});
+  freqTable('freq-method',mNZ.map(function(l,i){return [l,mVNZ[i]];}));
+
+  // ⑦ 유입 경로
+  var pL=['본인신청','상급자권유','동료권유','의무상담','상담사연결','기타'];
+  var pV=['2','3','4','1','5','6'].map(function(k){return tot.path[k]||0;});
+  makeChart('chart-path','bar',{labels:pL,datasets:[{label:'건수',data:pV,backgroundColor:COLORS,borderRadius:4}]},
+    {responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}});
+  freqTable('freq-path',pL.map(function(l,i){return [l,pV[i]];}));
+
+  // ⑧ 문제유형
+  var prL=['정상','PTSD','우울감','수면문제','물질중독','행위중독','자살관련','불안장애','정신증','직무스트레스','기타'];
+  var prV=[1,2,3,4,5,6,7,8,9,10,11].map(function(i){return tot.problem[i]||0;});
+  makeChart('chart-problem','bar',{labels:prL,datasets:[{label:'건수',data:prV,backgroundColor:prL.map(function(_,i){return COLORS[i%COLORS.length];}),borderRadius:4}]},
+    {responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}});
+  freqTable('freq-problem',prL.map(function(l,i){return [l,prV[i]];}));
+
+  // ⑨ 스트레스원
+  var sMap={'1-1':'인사이동','1-2':'인사갈등','1-3':'역할갈등','1-4':'과중한책임','1-5':'업무량변화','1-6':'업무질변화','1-7':'업무불연속','1-8':'교대근무','1-9':'직무요구도','1-10':'직무자율성','1-11':'기술부족','1-12':'물리적환경','1-13':'감정노동','2-1':'상급자갈등','2-2':'동료갈등','2-3':'민원갈등','2-4':'동료지지부족','2-5':'직장내괴롭힘','3-1':'외상사건(현장)','3-2':'외상사건(간접)','4-1':'일가정불균형','4-2':'본인사건','4-3':'재정문제','4-4':'금전관계','5-1':'배우자갈등','5-2':'자녀사건','5-3':'부모사건','5-4':'가족관계','5-5':'타인관계','6':'기타'};
+  var sP=Object.keys(sMap).map(function(k){return {label:sMap[k],val:tot.stress[k]||0};})
+    .filter(function(p){return p.val>0;}).sort(function(a,b){return b.val-a.val;});
+  var top10=sP.slice(0,10);
+  makeChart('chart-stress','bar',{labels:top10.map(function(p){return p.label;}),datasets:[{label:'건수',data:top10.map(function(p){return p.val;}),backgroundColor:COLORS,borderRadius:4}]},
+    {indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true}}});
+  freqTable('freq-stress',sP.map(function(p){return [p.label,p.val];}));
 }
 </script>
 </head>
@@ -373,221 +495,211 @@ function goBack() {
 
     <div id="dashboard-body" class="dashboard-body">
       <div class="tabs">
-        <button class="tab-btn active" onclick="showTab('tab-annual', this)">📋 연간요약</button>
-        <button class="tab-btn" onclick="showTab('tab-counsel', this)">📊 상담실적(누적)</button>
-        <button class="tab-btn" onclick="showTab('tab-charts', this)">📈 통계 그래프</button>
+        <button class="tab-btn active" onclick="showTab('tab-annual',this)">📋 연간요약</button>
+        <button class="tab-btn" onclick="showTab('tab-counsel',this)">📊 상담실적(누적)</button>
+        <button class="tab-btn" onclick="showTab('tab-charts',this)">📈 통계 그래프</button>
       </div>
 
-      <!-- ─── 탭1: 연간요약 ─── -->
+      <!-- 탭1 -->
       <div id="tab-annual" class="tab-content active">
         <h3>Ⅰ. 상담영역 (연간 요약)</h3>
         <div class="table-wrapper">
           <table>
             <thead>
-              <tr>
-                <th class="text-left" style="width:25%">지표</th>
-                <th>1분기</th><th>2분기</th><th>3분기</th><th>4분기</th><th>연간 합계</th>
-              </tr>
+              <tr><th class="text-left" style="width:25%">지표</th><th>1분기</th><th>2분기</th><th>3분기</th><th>4분기</th><th>연간 합계</th></tr>
             </thead>
             <tbody id="tbody-tab3"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- ─── 탭2: 상담실적(누적) ─── -->
+      <!-- 탭2 -->
       <div id="tab-counsel" class="tab-content">
         <h3>Ⅱ-1. 기본 정보 (성별/연령/계급/직무)</h3>
         <div class="table-wrapper">
           <table>
             <thead>
-              <tr>
-                <th rowspan="2">구분</th><th rowspan="2">총계</th>
-                <th colspan="2">성별</th><th colspan="5">연령</th><th colspan="8">계급</th><th colspan="8">직무</th>
-              </tr>
-              <tr>
-                <th>남</th><th>여</th>
-                <th>20대</th><th>30대</th><th>40대</th><th>50대</th><th>60대↑</th>
-                <th>사</th><th>교</th><th>장</th><th>위</th><th>경</th><th>령</th><th>정</th><th>보조</th>
-                <th>진압</th><th>화재운전</th><th>구조</th><th>구급</th><th>상황실</th><th>화재조사</th><th>행정</th><th>기타</th>
-              </tr>
+              <tr><th rowspan="2">구분</th><th rowspan="2">총계</th><th colspan="2">성별</th><th colspan="5">연령</th><th colspan="8">계급</th><th colspan="8">직무</th></tr>
+              <tr><th>남</th><th>여</th><th>20대</th><th>30대</th><th>40대</th><th>50대</th><th>60대↑</th><th>사</th><th>교</th><th>장</th><th>위</th><th>경</th><th>령</th><th>정</th><th>보조</th><th>진압</th><th>화재운전</th><th>구조</th><th>구급</th><th>상황실</th><th>화재조사</th><th>행정</th><th>기타</th></tr>
             </thead>
             <tbody id="tbody-basic"></tbody>
           </table>
         </div>
-
         <h3>Ⅱ-2. 생애주기별 상담 세부 (성별/계급/심리검사)</h3>
         <div class="table-wrapper">
           <table>
             <thead>
-              <tr>
-                <th rowspan="2">구분</th><th rowspan="2">총계</th>
-                <th colspan="2">성별</th><th colspan="5">계급</th><th rowspan="2">심리검사(회)</th>
-              </tr>
-              <tr>
-                <th>남</th><th>여</th>
-                <th>사</th><th>교</th><th>장</th><th>위</th><th>경</th>
-              </tr>
+              <tr><th rowspan="2">구분</th><th rowspan="2">총계</th><th colspan="2">성별</th><th colspan="5">계급</th><th rowspan="2">심리검사(회)</th></tr>
+              <tr><th>남</th><th>여</th><th>사</th><th>교</th><th>장</th><th>위</th><th>경</th></tr>
             </thead>
             <tbody id="tbody-life"></tbody>
           </table>
         </div>
-
         <h3>Ⅱ-3. 상담 방식/장소/경로/기존경험</h3>
         <div class="table-wrapper">
           <table>
             <thead>
-              <tr>
-                <th rowspan="2">구분</th>
-                <th colspan="5">상담방식</th><th colspan="5">상담장소</th><th colspan="6">유입 경로</th><th colspan="6">기존 상담 경험</th>
-              </tr>
-              <tr>
-                <th>대면</th><th>전화</th><th>화상</th><th>메신저</th><th>기타</th>
-                <th>센터내</th><th>소방서내</th><th>타센터</th><th>상담시설</th><th>기타</th>
-                <th>본인</th><th>상급자</th><th>동료</th><th>의무</th><th>상담사</th><th>기타</th>
-                <th>없음</th><th>찾상만</th><th>개인기관</th><th>정신과</th><th>유관기관</th><th>기타</th>
-              </tr>
+              <tr><th rowspan="2">구분</th><th colspan="5">상담방식</th><th colspan="5">상담장소</th><th colspan="6">유입 경로</th><th colspan="6">기존 상담 경험</th></tr>
+              <tr><th>대면</th><th>전화</th><th>화상</th><th>메신저</th><th>기타</th><th>센터내</th><th>소방서내</th><th>타센터</th><th>상담시설</th><th>기타</th><th>본인</th><th>상급자</th><th>동료</th><th>의무</th><th>상담사</th><th>기타</th><th>없음</th><th>찾상만</th><th>개인기관</th><th>정신과</th><th>유관기관</th><th>기타</th></tr>
             </thead>
             <tbody id="tbody-method"></tbody>
           </table>
         </div>
-
         <h3>Ⅱ-4. 피상담자 문제유형 (중복체크 합산)</h3>
         <div class="table-wrapper">
           <table>
-            <thead>
-              <tr>
-                <th>구분</th><th>정상</th><th>PTSD</th><th>우울감</th><th>수면문제</th><th>물질중독</th><th>행위중독</th><th>자살관련</th><th>불안장애</th><th>정신증</th><th>직무스트레스</th><th>기타</th>
-              </tr>
-            </thead>
+            <thead><tr><th>구분</th><th>정상</th><th>PTSD</th><th>우울감</th><th>수면문제</th><th>물질중독</th><th>행위중독</th><th>자살관련</th><th>불안장애</th><th>정신증</th><th>직무스트레스</th><th>기타</th></tr></thead>
             <tbody id="tbody-problem"></tbody>
           </table>
         </div>
-
         <h3>Ⅱ-5. 주요 조치</h3>
         <div class="table-wrapper">
           <table>
-            <thead>
-              <tr>
-                <th>구분</th><th>지속관리</th><th>정신과 연계</th><th>전문기관 연계</th><th>정서지지/대처</th><th>기타조치</th><th>상담종료</th>
-              </tr>
-            </thead>
+            <thead><tr><th>구분</th><th>지속관리</th><th>정신과 연계</th><th>전문기관 연계</th><th>정서지지/대처</th><th>기타조치</th><th>상담종료</th></tr></thead>
             <tbody id="tbody-action"></tbody>
           </table>
         </div>
-
         <h3>Ⅱ-6. 주요 스트레스원 세부 분석</h3>
         <div class="table-wrapper">
           <table>
             <thead>
-              <tr>
-                <th rowspan="2">구분</th>
-                <th colspan="13">1. 조직 및 직무환경</th>
-                <th colspan="5">2. 직장내 관계/갈등</th>
-                <th colspan="2">3. 외상사건</th>
-                <th colspan="4">4. 개인생활/환경</th>
-                <th colspan="5">5. 가족/대인관계</th>
-                <th rowspan="2">6.기타</th>
-              </tr>
-              <tr>
-                <th>1-1</th><th>1-2</th><th>1-3</th><th>1-4</th><th>1-5</th><th>1-6</th><th>1-7</th><th>1-8</th><th>1-9</th><th>1-10</th><th>1-11</th><th>1-12</th><th>1-13</th>
-                <th>2-1</th><th>2-2</th><th>2-3</th><th>2-4</th><th>2-5</th>
-                <th>3-1</th><th>3-2</th>
-                <th>4-1</th><th>4-2</th><th>4-3</th><th>4-4</th>
-                <th>5-1</th><th>5-2</th><th>5-3</th><th>5-4</th><th>5-5</th>
-              </tr>
+              <tr><th rowspan="2">구분</th><th colspan="13">1. 조직 및 직무환경</th><th colspan="5">2. 직장내 관계/갈등</th><th colspan="2">3. 외상사건</th><th colspan="4">4. 개인생활/환경</th><th colspan="5">5. 가족/대인관계</th><th rowspan="2">6.기타</th></tr>
+              <tr><th>1-1</th><th>1-2</th><th>1-3</th><th>1-4</th><th>1-5</th><th>1-6</th><th>1-7</th><th>1-8</th><th>1-9</th><th>1-10</th><th>1-11</th><th>1-12</th><th>1-13</th><th>2-1</th><th>2-2</th><th>2-3</th><th>2-4</th><th>2-5</th><th>3-1</th><th>3-2</th><th>4-1</th><th>4-2</th><th>4-3</th><th>4-4</th><th>5-1</th><th>5-2</th><th>5-3</th><th>5-4</th><th>5-5</th></tr>
             </thead>
             <tbody id="tbody-stress"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- ─── 탭3: 통계 그래프 ─── -->
+      <!-- 탭3: 통계 그래프 -->
       <div id="tab-charts" class="tab-content">
-        <h3>Ⅲ. 통계 그래프 (연간 누적 기준)</h3>
 
-        <!-- 요약 카드 -->
-        <div class="summary-row">
-          <div class="summary-card">
-            <div class="num" id="sc-total">-</div>
-            <div class="lbl">전체 상담횟수(회)</div>
-          </div>
-          <div class="summary-card blue">
-            <div class="num" id="sc-screen">-</div>
-            <div class="lbl">스크리닝(회)</div>
-          </div>
-          <div class="summary-card orange">
-            <div class="num" id="sc-indepth">-</div>
-            <div class="lbl">심층상담(회)</div>
-          </div>
-          <div class="summary-card purple">
-            <div class="num" id="sc-emerg">-</div>
-            <div class="lbl">긴급심리지원(회)</div>
-          </div>
+        <!-- 월 범위 선택기 -->
+        <div class="month-range-bar">
+          <label>📅 통계 기간</label>
+          <select id="startMonthSelect"></select> 월 ~
+          <select id="endMonthSelect"></select> 월
+          <button class="btn-apply" onclick="applyMonthRange()">적용</button>
+          <span class="range-hint" id="chart-range-label">연간 기준</span>
         </div>
 
-        <!-- 분기별 상담 현황 (전체 너비) -->
-        <div class="chart-card" style="margin-bottom:24px;">
-          <h4>① 분기별 상담 유형 현황</h4>
-          <div class="chart-wrap" style="height:280px;">
-            <canvas id="chart-quarterly"></canvas>
-          </div>
+        <!-- 데이터 없음 -->
+        <div id="no-data-notice" class="no-data-box" style="display:none;">
+          📭 선택한 기간에 집계된 데이터가 없습니다.<br>
+          <small style="color:#bbb;">기간을 다시 선택하거나, 백엔드에서 해당 월 데이터를 확인해 주세요.</small>
         </div>
 
-        <!-- 2열 그리드 -->
-        <div class="chart-grid">
-          <div class="chart-card">
-            <h4>② 성별 분포</h4>
-            <div class="chart-wrap" style="height:240px;">
-              <canvas id="chart-gender"></canvas>
-            </div>
-          </div>
-          <div class="chart-card">
-            <h4>③ 상담 방법 분포</h4>
-            <div class="chart-wrap" style="height:240px;">
-              <canvas id="chart-method"></canvas>
-            </div>
-          </div>
-          <div class="chart-card">
-            <h4>④ 연령대별 상담 현황</h4>
-            <div class="chart-wrap" style="height:240px;">
-              <canvas id="chart-age"></canvas>
-            </div>
-          </div>
-          <div class="chart-card">
-            <h4>⑤ 유입 경로 현황</h4>
-            <div class="chart-wrap" style="height:240px;">
-              <canvas id="chart-path"></canvas>
-            </div>
-          </div>
-        </div>
+        <!-- 차트 본문 -->
+        <div id="chart-body">
 
-        <!-- 계급별 (전체 너비) -->
-        <div class="chart-card" style="margin-bottom:24px;">
-          <h4>⑥ 계급별 상담 현황</h4>
-          <div class="chart-wrap" style="height:260px;">
-            <canvas id="chart-rank"></canvas>
+          <!-- 요약 카드 -->
+          <div class="summary-row">
+            <div class="summary-card"><div class="num" id="sc-total">-</div><div class="lbl">전체 상담횟수(회)</div></div>
+            <div class="summary-card blue"><div class="num" id="sc-screen">-</div><div class="lbl">스크리닝(회)</div></div>
+            <div class="summary-card orange"><div class="num" id="sc-indepth">-</div><div class="lbl">심층상담(회)</div></div>
+            <div class="summary-card purple"><div class="num" id="sc-emerg">-</div><div class="lbl">긴급심리지원(회)</div></div>
           </div>
-        </div>
 
-        <!-- 2열 그리드 -->
-        <div class="chart-grid">
-          <div class="chart-card">
-            <h4>⑦ 피상담자 문제유형</h4>
-            <div class="chart-wrap" style="height:260px;">
-              <canvas id="chart-problem"></canvas>
+          <!-- 관서별 대상자 수 설정 패널 -->
+          <details class="station-config">
+            <summary>⚙️ 관서별 전체 대상자 수 설정 (클릭하여 펼치기)</summary>
+            <p style="font-size:12px;color:#777;margin:4px 0 6px;">숫자 수정 후 저장하면 진행률에 즉시 반영됩니다.</p>
+            <div class="station-grid" id="station-input-grid"></div>
+            <button class="btn-station-save" onclick="saveStationTargets()">💾 저장</button>
+          </details>
+
+          <!-- ① 소방서별 진행률 -->
+          <div class="chart-card" id="card-station" style="margin-bottom:20px;">
+            <button class="btn-copy" onclick="copySection('card-station')">📋 복사</button>
+            <h4>① 소방서별 상담 진행률</h4>
+            <div class="chart-and-table">
+              <div class="chart-side"><div style="height:370px;"><canvas id="chart-station"></canvas></div></div>
+              <div class="table-side" id="station-freq"></div>
             </div>
           </div>
-          <div class="chart-card">
-            <h4>⑧ 주요 스트레스원 TOP 10</h4>
-            <div class="chart-wrap" style="height:260px;">
-              <canvas id="chart-stress"></canvas>
+
+          <!-- ② 분기별 -->
+          <div class="chart-card" id="card-quarterly" style="margin-bottom:20px;">
+            <button class="btn-copy" onclick="copySection('card-quarterly')">📋 복사</button>
+            <h4>② 분기별 상담 유형 현황 <span style="font-size:11px;font-weight:normal;color:#999;">(연간 전체 기준)</span></h4>
+            <div style="height:250px;"><canvas id="chart-quarterly"></canvas></div>
+          </div>
+
+          <!-- 2열 그리드 -->
+          <div class="chart-grid">
+            <div class="chart-card" id="card-gender">
+              <button class="btn-copy" onclick="copySection('card-gender')">📋 복사</button>
+              <h4>③ 성별 분포</h4>
+              <div class="chart-and-table">
+                <div class="chart-side"><div style="height:190px;"><canvas id="chart-gender"></canvas></div></div>
+                <div class="table-side"><div id="freq-gender"></div></div>
+              </div>
+            </div>
+            <div class="chart-card" id="card-method">
+              <button class="btn-copy" onclick="copySection('card-method')">📋 복사</button>
+              <h4>④ 상담 방법</h4>
+              <div class="chart-and-table">
+                <div class="chart-side"><div style="height:190px;"><canvas id="chart-method"></canvas></div></div>
+                <div class="table-side"><div id="freq-method"></div></div>
+              </div>
+            </div>
+            <div class="chart-card" id="card-age">
+              <button class="btn-copy" onclick="copySection('card-age')">📋 복사</button>
+              <h4>⑤ 연령대별 상담 현황</h4>
+              <div style="height:190px;"><canvas id="chart-age"></canvas></div>
+              <div id="freq-age" style="margin-top:8px;"></div>
+            </div>
+            <div class="chart-card" id="card-path">
+              <button class="btn-copy" onclick="copySection('card-path')">📋 복사</button>
+              <h4>⑥ 유입 경로</h4>
+              <div style="height:190px;"><canvas id="chart-path"></canvas></div>
+              <div id="freq-path" style="margin-top:8px;"></div>
             </div>
           </div>
-        </div>
 
+          <!-- 계급별 -->
+          <div class="chart-card" id="card-rank" style="margin-bottom:20px;">
+            <button class="btn-copy" onclick="copySection('card-rank')">📋 복사</button>
+            <h4>⑦ 계급별 상담 현황</h4>
+            <div class="chart-and-table">
+              <div class="chart-side"><div style="height:210px;"><canvas id="chart-rank"></canvas></div></div>
+              <div class="table-side"><div id="freq-rank"></div></div>
+            </div>
+          </div>
+
+          <!-- 직무별 -->
+          <div class="chart-card" id="card-job" style="margin-bottom:20px;">
+            <button class="btn-copy" onclick="copySection('card-job')">📋 복사</button>
+            <h4>⑧ 직무별 상담 현황</h4>
+            <div class="chart-and-table">
+              <div class="chart-side"><div style="height:210px;"><canvas id="chart-job"></canvas></div></div>
+              <div class="table-side"><div id="freq-job"></div></div>
+            </div>
+          </div>
+
+          <!-- 문제유형 / 스트레스원 -->
+          <div class="chart-grid">
+            <div class="chart-card" id="card-problem">
+              <button class="btn-copy" onclick="copySection('card-problem')">📋 복사</button>
+              <h4>⑨ 피상담자 문제유형</h4>
+              <div style="height:210px;"><canvas id="chart-problem"></canvas></div>
+              <div id="freq-problem" style="margin-top:8px;max-height:160px;overflow-y:auto;"></div>
+            </div>
+            <div class="chart-card" id="card-stress">
+              <button class="btn-copy" onclick="copySection('card-stress')">📋 복사</button>
+              <h4>⑩ 주요 스트레스원 TOP 10</h4>
+              <div style="height:210px;"><canvas id="chart-stress"></canvas></div>
+              <div id="freq-stress" style="margin-top:8px;max-height:160px;overflow-y:auto;"></div>
+            </div>
+          </div>
+
+        </div><!-- /chart-body -->
       </div><!-- /tab-charts -->
     </div><!-- /dashboard-body -->
   </div><!-- /container -->
 </div><!-- /app-wrapper -->
+
+<!-- 복사 토스트 -->
+<div id="copy-toast" style="position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:7px 20px;border-radius:20px;font-size:13px;opacity:0;transition:opacity 0.3s;pointer-events:none;">📋 표 데이터가 복사되었습니다</div>
 </body>
 </html>
