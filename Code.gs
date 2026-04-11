@@ -502,6 +502,7 @@ function calculateAdminStats(region, targetYear) {
     });
 
     var personSessionCount = {};
+    var stationMap = {};  // { "소방서명": { c: 횟수, pSet: {} } }
 
     for (var i = 1; i < data.length; i++) {
       var row = data[i];
@@ -547,6 +548,13 @@ function calculateAdminStats(region, targetYear) {
       var st = stats[qTarget];
       st.pSet[uniqueId] = true;
       st.count++;
+      // 소방서/센터별 횟수·인원 집계
+      var stationName = String(row[3] || '').trim();
+      if (stationName) {
+        if (!stationMap[stationName]) stationMap[stationName] = { c: 0, pSet: {} };
+        stationMap[stationName].c++;
+        stationMap[stationName].pSet[uniqueId] = true;
+      }
 
       if(subCat.indexOf("스크리닝") > -1) { st.screen_pSet[uniqueId] = true; st.screen_c++; }
       if(subCat.indexOf("심층상담") > -1) { st.indepth_pSet[uniqueId] = true; st.indepth_c++; }
@@ -626,6 +634,15 @@ function calculateAdminStats(region, targetYear) {
     }
     result.over4Total = over4Count;
 
+    // 소방서/센터별 완료 데이터 생성
+    var stationDone = {};
+    for (var sn in stationMap) {
+      stationDone[sn] = {
+        c: stationMap[sn].c,
+        p: Object.keys(stationMap[sn].pSet).length
+      };
+    }
+    result.stationDone = stationDone;
     return { success: true, data: result, year: year };
   } catch (error) { 
     return { success: false, message: error.message }; 

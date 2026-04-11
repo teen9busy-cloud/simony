@@ -29,8 +29,8 @@ th { background-color: #f5f5f5; color: #333; position: sticky; top: 0; }
 h3 { color: #1b5e20; margin-top: 10px; margin-bottom: 10px; font-weight: normal; }
 
 /* ─── 차트 탭 ─── */
-.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-.chart-card { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; position: relative; }
+/* 단일 컬럼 — 모든 카드 세로 나열 */
+.chart-card { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; position: relative; margin-bottom: 20px; }
 .chart-card h4 { margin: 0 0 10px 0; font-size: 14px; color: #2c3e50; border-left: 4px solid #4CAF50; padding-left: 10px; font-weight: bold; }
 .chart-wrap canvas { max-width: 100%; }
 .summary-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
@@ -41,10 +41,10 @@ h3 { color: #1b5e20; margin-top: 10px; margin-bottom: 10px; font-weight: normal;
 .summary-card .num { font-size: 26px; font-weight: bold; }
 .summary-card .lbl { font-size: 11px; margin-top: 4px; opacity: 0.9; }
 
-/* ─── 그래프 + 빈도표 나란히 ─── */
-.chart-and-table { display: flex; gap: 10px; align-items: flex-start; }
-.chart-side { flex: 0 0 56%; min-width: 0; }
-.table-side { flex: 1; min-width: 0; overflow-x: auto; }
+/* ─── 그래프 위 / 빈도표 아래 ─── */
+.chart-and-table { display: flex; flex-direction: column; gap: 12px; }
+.chart-side { width: 100%; }
+.table-side { width: 100%; overflow-x: auto; }
 
 /* ─── 빈도표 ─── */
 .freq-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -67,21 +67,9 @@ h3 { color: #1b5e20; margin-top: 10px; margin-bottom: 10px; font-weight: normal;
 .btn-apply { background: #2e7d32; color: white; padding: 6px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
 .range-hint { font-size: 12px; color: #777; font-style: italic; }
 
-/* ─── 관서 대상자 설정 ─── */
-.station-config { background: #fff8e1; border: 1px solid #ffe082; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; }
-.station-config summary { cursor: pointer; font-size: 13px; color: #e65100; font-weight: bold; }
-.station-config[open] summary { margin-bottom: 8px; }
-.station-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 5px; margin-top: 6px; }
-.station-row { display: flex; align-items: center; gap: 6px; font-size: 12px; }
-.station-row label { flex: 1; white-space: nowrap; color: #333; }
-.station-row input[type=number] { width: 58px; padding: 2px 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px; text-align: right; }
-.btn-station-save { margin-top: 8px; background: #f57c00; color: white; border: none; border-radius: 4px; padding: 5px 14px; font-size: 13px; cursor: pointer; }
 
-@media(max-width:768px){
-  .chart-grid { grid-template-columns: 1fr; }
-  .chart-and-table { flex-direction: column; }
-  .chart-side { flex: none; width: 100%; }
-}
+
+@media(max-width:768px){ .chart-side { width: 100%; } }
 </style>
 
 <script>
@@ -90,16 +78,7 @@ var APP_USER   = "<?= userName ?>";
 var _chartInstances = {};
 var _chartDataCache = null;
 
-/* PDF 기준 관서별 전체 대상자 수 — 설정 패널에서 수정 가능 */
-var STATION_TARGETS = {
-  "본부": 288,
-  "거제소방서": 319, "거창소방서": 181, "고성소방서": 173,
-  "김해동부소방서": 302, "김해서부소방서": 277, "남해소방서": 153,
-  "밀양소방서": 254, "사천소방서": 229, "산청소방서": 169,
-  "양산소방서": 340, "의령소방서": 128, "진주소방서": 335,
-  "창녕소방서": 201, "통영소방서": 231, "하동소방서": 198,
-  "함안소방서": 205, "함양소방서": 164, "합천소방서": 197
-};
+/* 관서별 상담 현황은 stationDone 데이터로 자동 표시 */
 
 window.onload = function() {
   var currentYear = new Date().getFullYear();
@@ -116,29 +95,10 @@ window.onload = function() {
     }
     if (idx === 1) s.value = 12;
   });
-  buildStationInputs();
   loadData();
 };
 
-function buildStationInputs() {
-  var grid = document.getElementById('station-input-grid');
-  Object.keys(STATION_TARGETS).forEach(function(name) {
-    var row = document.createElement('div'); row.className = 'station-row';
-    row.innerHTML = '<label>' + name + '</label>' +
-      '<input type="number" id="si_' + name + '" value="' + STATION_TARGETS[name] + '" min="0">';
-    grid.appendChild(row);
-  });
-}
 
-function saveStationTargets() {
-  Object.keys(STATION_TARGETS).forEach(function(name) {
-    var el = document.getElementById('si_' + name);
-    if (el) STATION_TARGETS[name] = parseInt(el.value) || 0;
-  });
-  // 저장 후 즉시 소방서 섹션 재렌더
-  if (_chartDataCache) renderStationSection();
-  alert('저장되었습니다.');
-}
 
 function loadData() {
   document.getElementById('loading').style.display = 'block';
@@ -306,46 +266,63 @@ function goBack() {
   google.script.run.withSuccessHandler(function(html){document.open();document.write(html);document.close();}).loadDashboard(APP_REGION,APP_USER);
 }
 
-/* ─── 소방서별 진행률 ─── */
+/* ─── 소방서별 상담 횟수/명수 ───
+   stationDone: { "소방서명": {c:횟수, p:명수} } 또는 { "소방서명": 숫자(횟수만) }
+   ※ 백엔드(Code.gs) calculateAdminStats 에서 stationDone 을
+     { name: {c:상담횟수, p:상담인원} } 형태로 반환하면 명수도 표시됩니다.
+*/
 function renderStationSection() {
-  var stationDone=(_chartDataCache&&_chartDataCache.stationDone)||{};
-  var names=Object.keys(STATION_TARGETS).sort();
-  var rows=names.map(function(nm,idx){
-    var target=STATION_TARGETS[nm]||0;
-    var done=stationDone[nm]||0;
-    var pct=target>0?(done/target*100).toFixed(1):'-';
-    var color=pct==='-'?'#999':parseFloat(pct)>=100?'#1b5e20':parseFloat(pct)>=90?'#2e7d32':parseFloat(pct)>=80?'#E65100':'#b71c1c';
-    return {no:idx+1,name:nm,target:target,done:done,pct:pct,color:color};
-  });
-  var totT=rows.reduce(function(a,r){return a+r.target;},0);
-  var totD=rows.reduce(function(a,r){return a+r.done;},0);
-  var totP=totT>0?(totD/totT*100).toFixed(1):'-';
+  var raw=(_chartDataCache&&_chartDataCache.stationDone)||{};
 
-  var thtml='<table class="freq-tbl" style="min-width:0;white-space:normal">' +
-    '<thead><tr><th>#</th><th style="text-align:left">소방서</th><th>대상자</th><th>완료</th><th>비율</th></tr></thead><tbody>';
+  /* DATA에 있는 관서 목록 수집 */
+  var allNames = Object.keys(raw).filter(function(n){return n;}).sort();
+  /* raw 데이터 파싱: 숫자(구버전) 또는 {c,p}(신버전) */
+  var rows = allNames.map(function(nm, idx) {
+    var val = raw[nm];
+    var cnt = (typeof val === 'object' && val !== null) ? (val.c||0) : (val||0);
+    var ppl = (typeof val === 'object' && val !== null) ? (val.p||0) : 0;
+    return { no:idx+1, name:nm, cnt:cnt, ppl:ppl };
+  });
+
+  var totCnt = rows.reduce(function(a,r){return a+r.cnt;},0);
+  var totPpl = rows.reduce(function(a,r){return a+r.ppl;},0);
+  var hasPpl = rows.some(function(r){return r.ppl>0;});
+
+  /* 표 */
+  var thtml = '<table class="freq-tbl" style="min-width:0;white-space:normal"><thead><tr>' +
+    '<th>#</th><th style="text-align:left">소방서/센터</th><th>상담횟수(회)</th>' +
+    (hasPpl ? '<th>상담인원(명)</th>' : '') +
+    '</tr></thead><tbody>';
   rows.forEach(function(r){
-    thtml+='<tr><td style="text-align:center">'+r.no+'</td><td style="text-align:left">'+r.name+'</td>'+
-      '<td>'+r.target.toLocaleString()+'</td><td>'+r.done.toLocaleString()+'</td>'+
-      '<td style="color:'+r.color+';font-weight:bold;text-align:center">'+r.pct+(r.pct!=='-'?'%':'')+'</td></tr>';
+    thtml += '<tr><td style="text-align:center">'+r.no+'</td>' +
+      '<td style="text-align:left">'+r.name+'</td>' +
+      '<td>'+r.cnt.toLocaleString()+'</td>' +
+      (hasPpl ? '<td>'+r.ppl.toLocaleString()+'</td>' : '') +
+      '</tr>';
   });
-  thtml+='<tr class="total-row"><td colspan="2" style="text-align:center">전 체</td>'+
-    '<td>'+totT.toLocaleString()+'</td><td>'+totD.toLocaleString()+'</td>'+
-    '<td style="color:#1b5e20;font-weight:bold;text-align:center">'+totP+(totP!=='-'?'%':'')+'</td></tr>';
-  thtml+='</tbody></table>';
-  document.getElementById('station-freq').innerHTML=thtml;
+  thtml += '<tr class="total-row"><td colspan="2" style="text-align:center">전 체</td>' +
+    '<td>'+totCnt.toLocaleString()+'</td>' +
+    (hasPpl ? '<td>'+totPpl.toLocaleString()+'</td>' : '') +
+    '</tr></tbody></table>';
+  document.getElementById('station-freq').innerHTML = thtml;
 
+  /* 그래프 */
   if (_chartInstances['chart-station']) _chartInstances['chart-station'].destroy();
-  var ctx=document.getElementById('chart-station').getContext('2d');
-  _chartInstances['chart-station']=new Chart(ctx,{
+  var el = document.getElementById('chart-station');
+  if (!el) return;
+  /* 관서 수에 맞게 높이 조정 */
+  var chartH = Math.max(260, rows.length * 30);
+  el.parentElement.style.height = chartH + 'px';
+  var datasets = [{label:'상담횟수(회)', data:rows.map(function(r){return r.cnt;}), backgroundColor:'#5c8fbd', borderRadius:3}];
+  if (hasPpl) datasets.push({label:'상담인원(명)', data:rows.map(function(r){return r.ppl;}), backgroundColor:'#81c784', borderRadius:3});
+  _chartInstances['chart-station'] = new Chart(el.getContext('2d'), {
     type:'bar',
-    data:{
-      labels:rows.map(function(r){return r.name;}),
-      datasets:[
-        {label:'완료(명)',data:rows.map(function(r){return r.done;}),backgroundColor:'#4CAF50',borderRadius:3},
-        {label:'대상자(명)',data:rows.map(function(r){return r.target;}),backgroundColor:'rgba(33,150,243,0.2)',borderRadius:3}
-      ]
-    },
-    options:{indexAxis:'y',responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{beginAtZero:true}}}
+    data:{ labels:rows.map(function(r){return r.name;}), datasets:datasets },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom'}},
+      scales:{x:{beginAtZero:true, ticks:{precision:0}}}
+    }
   });
 }
 
@@ -417,18 +394,18 @@ function renderChartContent(tot){
       {label:'긴급지원',data:[q1.emergC,q2.emergC,q3.emergC,q4.emergC],backgroundColor:'#F44336'},
       {label:'집단상담',data:[q1.groupC,q2.groupC,q3.groupC,q4.groupC],backgroundColor:'#9C27B0'}
     ]
-  },{responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{stacked:false},y:{beginAtZero:true}}});
+  },{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{x:{stacked:false},y:{beginAtZero:true}}});
 
   // ② 성별
   var gM=tot.gender['남']||0,gF=tot.gender['여']||0;
   makeChart('chart-gender','doughnut',{labels:['남','여'],datasets:[{data:[gM,gF],backgroundColor:['#2196F3','#E91E63'],borderWidth:2}]},
-    {responsive:true,plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:function(c){var t=gM+gF;return c.label+': '+c.raw+'명 ('+Math.round(c.raw/t*100)+'%)';}}}}}); 
+    {responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:function(c){var t=gM+gF;return c.label+': '+c.raw+'명 ('+Math.round(c.raw/t*100)+'%)';}}}}}); 
   freqTable('freq-gender',[['남',gM],['여',gF]]);
 
   // ③ 연령대
   var ageK=['20대','30대','40대','50대','60대 이상'];
   makeChart('chart-age','bar',{labels:ageK,datasets:[{label:'명수',data:ageK.map(function(k){return tot.age[k]||0;}),backgroundColor:COLORS,borderRadius:4}]},
-    {responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}});
+    {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}});
   freqTable('freq-age',ageK.map(function(k){return [k,tot.age[k]||0];}));
 
   // ④ 계급별
@@ -436,14 +413,14 @@ function renderChartContent(tot){
   var rkV=rkK.map(function(k){return tot.rank[k]||0;});
   var nzRk=rkK.filter(function(k,i){return rkV[i]>0;}),nzRv=rkV.filter(function(v){return v>0;});
   makeChart('chart-rank','bar',{labels:nzRk,datasets:[{label:'명수',data:nzRv,backgroundColor:COLORS,borderRadius:4}]},
-    {indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true}}});
+    {indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{precision:0}}}});
   freqTable('freq-rank',nzRk.map(function(k){return [k,tot.rank[k]||0];}));
 
   // ⑤ 직무별
   var jL=['화재진압','화재운전','구조','구급','상황실','화재조사','행정업무','기타'];
   var jV=['1','2','3','4','5','6','7','8'].map(function(k){return tot.job[k]||0;});
   makeChart('chart-job','bar',{labels:jL,datasets:[{label:'명수',data:jV,backgroundColor:COLORS,borderRadius:4}]},
-    {responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}});
+    {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}});
   freqTable('freq-job',jL.map(function(l,i){return [l,jV[i]];}));
 
   // ⑥ 상담 방법
@@ -451,21 +428,21 @@ function renderChartContent(tot){
   var mV=[1,2,3,4,5].map(function(i){return tot.method[i]||0;});
   var mNZ=mL.filter(function(_,i){return mV[i]>0;}),mVNZ=mV.filter(function(v){return v>0;});
   makeChart('chart-method','doughnut',{labels:mNZ,datasets:[{data:mVNZ,backgroundColor:COLORS.slice(0,mNZ.length),borderWidth:2}]},
-    {responsive:true,plugins:{legend:{position:'bottom'}}});
+    {responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}});
   freqTable('freq-method',mNZ.map(function(l,i){return [l,mVNZ[i]];}));
 
   // ⑦ 유입 경로
   var pL=['본인신청','상급자권유','동료권유','의무상담','상담사연결','기타'];
   var pV=['2','3','4','1','5','6'].map(function(k){return tot.path[k]||0;});
   makeChart('chart-path','bar',{labels:pL,datasets:[{label:'건수',data:pV,backgroundColor:COLORS,borderRadius:4}]},
-    {responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}});
+    {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}});
   freqTable('freq-path',pL.map(function(l,i){return [l,pV[i]];}));
 
   // ⑧ 문제유형
   var prL=['정상','PTSD','우울감','수면문제','물질중독','행위중독','자살관련','불안장애','정신증','직무스트레스','기타'];
   var prV=[1,2,3,4,5,6,7,8,9,10,11].map(function(i){return tot.problem[i]||0;});
   makeChart('chart-problem','bar',{labels:prL,datasets:[{label:'건수',data:prV,backgroundColor:prL.map(function(_,i){return COLORS[i%COLORS.length];}),borderRadius:4}]},
-    {responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}});
+    {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}});
   freqTable('freq-problem',prL.map(function(l,i){return [l,prV[i]];}));
 
   // ⑨ 스트레스원
@@ -474,7 +451,7 @@ function renderChartContent(tot){
     .filter(function(p){return p.val>0;}).sort(function(a,b){return b.val-a.val;});
   var top10=sP.slice(0,10);
   makeChart('chart-stress','bar',{labels:top10.map(function(p){return p.label;}),datasets:[{label:'건수',data:top10.map(function(p){return p.val;}),backgroundColor:COLORS,borderRadius:4}]},
-    {indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true}}});
+    {indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{precision:0}}}});
   freqTable('freq-stress',sP.map(function(p){return [p.label,p.val];}));
 }
 </script>
@@ -600,18 +577,10 @@ function renderChartContent(tot){
             <div class="summary-card purple"><div class="num" id="sc-emerg">-</div><div class="lbl">긴급심리지원(회)</div></div>
           </div>
 
-          <!-- 관서별 대상자 수 설정 패널 -->
-          <details class="station-config">
-            <summary>⚙️ 관서별 전체 대상자 수 설정 (클릭하여 펼치기)</summary>
-            <p style="font-size:12px;color:#777;margin:4px 0 6px;">숫자 수정 후 저장하면 진행률에 즉시 반영됩니다.</p>
-            <div class="station-grid" id="station-input-grid"></div>
-            <button class="btn-station-save" onclick="saveStationTargets()">💾 저장</button>
-          </details>
-
-          <!-- ① 소방서별 진행률 -->
-          <div class="chart-card" id="card-station" style="margin-bottom:20px;">
+          <!-- ① 소방서/센터별 상담 현황 -->
+          <div class="chart-card" id="card-station">
             <button class="btn-copy" onclick="copySection('card-station')">📋 복사</button>
-            <h4>① 소방서별 상담 진행률</h4>
+            <h4>① 소방서/센터별 상담 현황</h4>
             <div class="chart-and-table">
               <div class="chart-side"><div style="height:370px;"><canvas id="chart-station"></canvas></div></div>
               <div class="table-side" id="station-freq"></div>
@@ -619,77 +588,81 @@ function renderChartContent(tot){
           </div>
 
           <!-- ② 분기별 -->
-          <div class="chart-card" id="card-quarterly" style="margin-bottom:20px;">
+          <div class="chart-card" id="card-quarterly">
             <button class="btn-copy" onclick="copySection('card-quarterly')">📋 복사</button>
             <h4>② 분기별 상담 유형 현황 <span style="font-size:11px;font-weight:normal;color:#999;">(연간 전체 기준)</span></h4>
             <div style="height:250px;"><canvas id="chart-quarterly"></canvas></div>
           </div>
 
-          <!-- 2열 그리드 -->
-          <div class="chart-grid">
-            <div class="chart-card" id="card-gender">
-              <button class="btn-copy" onclick="copySection('card-gender')">📋 복사</button>
-              <h4>③ 성별 분포</h4>
-              <div class="chart-and-table">
-                <div class="chart-side"><div style="height:190px;"><canvas id="chart-gender"></canvas></div></div>
-                <div class="table-side"><div id="freq-gender"></div></div>
-              </div>
-            </div>
-            <div class="chart-card" id="card-method">
-              <button class="btn-copy" onclick="copySection('card-method')">📋 복사</button>
-              <h4>④ 상담 방법</h4>
-              <div class="chart-and-table">
-                <div class="chart-side"><div style="height:190px;"><canvas id="chart-method"></canvas></div></div>
-                <div class="table-side"><div id="freq-method"></div></div>
-              </div>
-            </div>
-            <div class="chart-card" id="card-age">
-              <button class="btn-copy" onclick="copySection('card-age')">📋 복사</button>
-              <h4>⑤ 연령대별 상담 현황</h4>
-              <div style="height:190px;"><canvas id="chart-age"></canvas></div>
-              <div id="freq-age" style="margin-top:8px;"></div>
-            </div>
-            <div class="chart-card" id="card-path">
-              <button class="btn-copy" onclick="copySection('card-path')">📋 복사</button>
-              <h4>⑥ 유입 경로</h4>
-              <div style="height:190px;"><canvas id="chart-path"></canvas></div>
-              <div id="freq-path" style="margin-top:8px;"></div>
+          <div class="chart-card" id="card-gender">
+            <button class="btn-copy" onclick="copySection('card-gender')">📋 복사</button>
+            <h4>③ 성별 분포</h4>
+            <div class="chart-and-table">
+              <div class="chart-side"><div style="height:220px;"><canvas id="chart-gender"></canvas></div></div>
+              <div class="table-side"><div id="freq-gender"></div></div>
             </div>
           </div>
 
-          <!-- 계급별 -->
-          <div class="chart-card" id="card-rank" style="margin-bottom:20px;">
+          <div class="chart-card" id="card-method">
+            <button class="btn-copy" onclick="copySection('card-method')">📋 복사</button>
+            <h4>④ 상담 방법</h4>
+            <div class="chart-and-table">
+              <div class="chart-side"><div style="height:220px;"><canvas id="chart-method"></canvas></div></div>
+              <div class="table-side"><div id="freq-method"></div></div>
+            </div>
+          </div>
+
+          <div class="chart-card" id="card-age">
+            <button class="btn-copy" onclick="copySection('card-age')">📋 복사</button>
+            <h4>⑤ 연령대별 상담 현황</h4>
+            <div class="chart-and-table">
+              <div class="chart-side"><div style="height:220px;"><canvas id="chart-age"></canvas></div></div>
+              <div class="table-side"><div id="freq-age"></div></div>
+            </div>
+          </div>
+
+          <div class="chart-card" id="card-path">
+            <button class="btn-copy" onclick="copySection('card-path')">📋 복사</button>
+            <h4>⑥ 유입 경로</h4>
+            <div class="chart-and-table">
+              <div class="chart-side"><div style="height:220px;"><canvas id="chart-path"></canvas></div></div>
+              <div class="table-side"><div id="freq-path"></div></div>
+            </div>
+          </div>
+
+          <div class="chart-card" id="card-rank">
             <button class="btn-copy" onclick="copySection('card-rank')">📋 복사</button>
             <h4>⑦ 계급별 상담 현황</h4>
             <div class="chart-and-table">
-              <div class="chart-side"><div style="height:210px;"><canvas id="chart-rank"></canvas></div></div>
+              <div class="chart-side"><div style="height:240px;"><canvas id="chart-rank"></canvas></div></div>
               <div class="table-side"><div id="freq-rank"></div></div>
             </div>
           </div>
 
-          <!-- 직무별 -->
-          <div class="chart-card" id="card-job" style="margin-bottom:20px;">
+          <div class="chart-card" id="card-job">
             <button class="btn-copy" onclick="copySection('card-job')">📋 복사</button>
             <h4>⑧ 직무별 상담 현황</h4>
             <div class="chart-and-table">
-              <div class="chart-side"><div style="height:210px;"><canvas id="chart-job"></canvas></div></div>
+              <div class="chart-side"><div style="height:240px;"><canvas id="chart-job"></canvas></div></div>
               <div class="table-side"><div id="freq-job"></div></div>
             </div>
           </div>
 
-          <!-- 문제유형 / 스트레스원 -->
-          <div class="chart-grid">
-            <div class="chart-card" id="card-problem">
-              <button class="btn-copy" onclick="copySection('card-problem')">📋 복사</button>
-              <h4>⑨ 피상담자 문제유형</h4>
-              <div style="height:210px;"><canvas id="chart-problem"></canvas></div>
-              <div id="freq-problem" style="margin-top:8px;max-height:160px;overflow-y:auto;"></div>
+          <div class="chart-card" id="card-problem">
+            <button class="btn-copy" onclick="copySection('card-problem')">📋 복사</button>
+            <h4>⑨ 피상담자 문제유형</h4>
+            <div class="chart-and-table">
+              <div class="chart-side"><div style="height:240px;"><canvas id="chart-problem"></canvas></div></div>
+              <div class="table-side"><div id="freq-problem"></div></div>
             </div>
-            <div class="chart-card" id="card-stress">
-              <button class="btn-copy" onclick="copySection('card-stress')">📋 복사</button>
-              <h4>⑩ 주요 스트레스원 TOP 10</h4>
-              <div style="height:210px;"><canvas id="chart-stress"></canvas></div>
-              <div id="freq-stress" style="margin-top:8px;max-height:160px;overflow-y:auto;"></div>
+          </div>
+
+          <div class="chart-card" id="card-stress">
+            <button class="btn-copy" onclick="copySection('card-stress')">📋 복사</button>
+            <h4>⑩ 주요 스트레스원 TOP 10</h4>
+            <div class="chart-and-table">
+              <div class="chart-side"><div style="height:300px;"><canvas id="chart-stress"></canvas></div></div>
+              <div class="table-side"><div id="freq-stress"></div></div>
             </div>
           </div>
 
