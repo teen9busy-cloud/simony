@@ -495,14 +495,17 @@ function calculateAdminStats(region, targetYear) {
         group_pSet: {}, group_sessionSet: {},
         call_c: 0,
         gender: {}, age: {}, rank: {}, job: {},
+        // 명수용: 각 항목별로 uniqueId → 최초 기록된 값 저장
+        gender_first: {}, age_first: {}, rank_first: {}, job_first: {},
         life_gender: {}, life_rank: {},
         method: {}, place: {}, path: {}, prevExp: {},
+        method_first: {}, place_first: {}, path_first: {},
         stress: {}, problem: {}, action: {}
       };
     });
 
     var personSessionCount = {};
-    var stationMap = {};  // { "소방서명": { c: 횟수, pSet: {} } }
+    var stationByQ = { q1:{}, q2:{}, q3:{}, q4:{} };  // 분기별 소방서 집계
 
     for (var i = 1; i < data.length; i++) {
       var row = data[i];
@@ -546,14 +549,14 @@ function calculateAdminStats(region, targetYear) {
       var testRaw = String(row[27] || "");
 
       var st = stats[qTarget];
-      st.pSet[uniqueId] = true;
-      st.count++;
-      // 소방서/센터별 횟수·인원 집계
-      var stationName = String(row[3] || '').trim();
+
+      // ── 소방서별 집계
+      var stationName = String(row[3] || "").trim();
       if (stationName) {
-        if (!stationMap[stationName]) stationMap[stationName] = { c: 0, pSet: {} };
-        stationMap[stationName].c++;
-        stationMap[stationName].pSet[uniqueId] = true;
+        var sq = stationByQ[qTarget];
+        if (!sq[stationName]) sq[stationName] = { c: 0, pSet: {} };
+        sq[stationName].c++;
+        sq[stationName].pSet[uniqueId] = true;
       }
 
       if(subCat.indexOf("스크리닝") > -1) { st.screen_pSet[uniqueId] = true; st.screen_c++; }
@@ -573,34 +576,27 @@ function calculateAdminStats(region, targetYear) {
         if(rankRaw) st.life_rank[rankRaw] = (st.life_rank[rankRaw] || 0) + 1;
       }
 
-      if(gender) st.gender[gender] = (st.gender[gender] || 0) + 1;
-      if(ageGrp) st.age[ageGrp] = (st.age[ageGrp] || 0) + 1;
-      if(rankRaw) st.rank[rankRaw] = (st.rank[rankRaw] || 0) + 1;
-      
+      // ── 횟수 집계 (매 행 카운트)
+      if(gender)  st.gender[gender]  = (st.gender[gender]  || 0) + 1;
+      if(ageGrp)  st.age[ageGrp]     = (st.age[ageGrp]     || 0) + 1;
+      if(rankRaw) st.rank[rankRaw]   = (st.rank[rankRaw]   || 0) + 1;
       var jMatch = jobRaw.match(/^(\d)/);
-      if(jMatch) st.job[jMatch[1]] = (st.job[jMatch[1]] || 0) + 1;
-
-      var mMatch = methodRaw.match(/^(\d)/);
-      if(mMatch) st.method[mMatch[1]] = (st.method[mMatch[1]] || 0) + 1;
-
+      if(jMatch)  st.job[jMatch[1]]  = (st.job[jMatch[1]]  || 0) + 1;
+      var mMatch  = methodRaw.match(/^(\d)/);
+      if(mMatch)  st.method[mMatch[1]]  = (st.method[mMatch[1]]  || 0) + 1;
       var plMatch = placeRaw.match(/^(\d)/);
-      if(plMatch) st.place[plMatch[1]] = (st.place[plMatch[1]] || 0) + 1;
-
+      if(plMatch) st.place[plMatch[1]]  = (st.place[plMatch[1]]  || 0) + 1;
       var paMatch = pathRaw.match(/^(\d)/);
-      if(paMatch) st.path[paMatch[1]] = (st.path[paMatch[1]] || 0) + 1;
-
+      if(paMatch) st.path[paMatch[1]]   = (st.path[paMatch[1]]   || 0) + 1;
       var prMatch = prevExpRaw.match(/^(\d(-\d)?)/);
       if(prMatch) st.prevExp[prMatch[1]] = (st.prevExp[prMatch[1]] || 0) + 1;
-
-      var aMatch = actionRaw.match(/^(\d)/);
-      if(aMatch) st.action[aMatch[1]] = (st.action[aMatch[1]] || 0) + 1;
-
+      var aMatch  = actionRaw.match(/^(\d)/);
+      if(aMatch)  st.action[aMatch[1]]  = (st.action[aMatch[1]]  || 0) + 1;
       if(stressRaw) {
-         var sMatch = stressRaw.match(/^(\d-\d+)/);
-         var sKey = sMatch ? sMatch[1] : '6'; 
-         st.stress[sKey] = (st.stress[sKey] || 0) + 1;
+        var sMatch = stressRaw.match(/^(\d-\d+)/);
+        var sKey = sMatch ? sMatch[1] : '6';
+        st.stress[sKey] = (st.stress[sKey] || 0) + 1;
       }
-
       if(probRaw) {
         var pArr = probRaw.split(",");
         for(var p=0; p<pArr.length; p++) {
@@ -608,11 +604,39 @@ function calculateAdminStats(region, targetYear) {
           if(numMatch) st.problem[numMatch[1]] = (st.problem[numMatch[1]] || 0) + 1;
         }
       }
+
+      // ── 명수 집계: 이 분기에서 uniqueId 첫 등장 시에만 기록
+      var isFirstInQ = !st.pSet[uniqueId];
+      if (isFirstInQ) {
+        if(gender)  st.gender_first[uniqueId] = gender;
+        if(ageGrp)  st.age_first[uniqueId]    = ageGrp;
+        if(rankRaw) st.rank_first[uniqueId]   = rankRaw;
+        if(jMatch)  st.job_first[uniqueId]    = jMatch[1];
+        if(mMatch)  st.method_first[uniqueId] = mMatch[1];
+        if(plMatch) st.place_first[uniqueId]  = plMatch[1];
+        if(paMatch) st.path_first[uniqueId]   = paMatch[1];
+      }
+
+      // pSet / count는 마지막에 한 번만
+      st.pSet[uniqueId] = true;
+      st.count++;
+
     }
 
     var result = {};
     quarters.forEach(function(q) {
        var st = stats[q];
+
+       // firstSeen 딕셔너리 → { 항목값: 명수 } 로 변환하는 헬퍼
+       function toPCount(firstMap) {
+         var r = {};
+         for (var uid in firstMap) {
+           var v = firstMap[uid];
+           r[v] = (r[v] || 0) + 1;
+         }
+         return r;
+       }
+
        result[q] = {
          totalP: Object.keys(st.pSet).length, totalC: st.count,
          screenP: Object.keys(st.screen_pSet).length, screenC: st.screen_c,
@@ -622,9 +646,17 @@ function calculateAdminStats(region, targetYear) {
          groupP: Object.keys(st.group_pSet).length, groupC: Object.keys(st.group_sessionSet).length,
          callC: st.call_c,
          gender: st.gender, age: st.age, rank: st.rank, job: st.job,
+         gender_p: toPCount(st.gender_first),
+         age_p:    toPCount(st.age_first),
+         rank_p:   toPCount(st.rank_first),
+         job_p:    toPCount(st.job_first),
          life_gender: st.life_gender, life_rank: st.life_rank,
          method: st.method, place: st.place, path: st.path, prevExp: st.prevExp,
+         method_p: toPCount(st.method_first),
+         place_p:  toPCount(st.place_first),
+         path_p:   toPCount(st.path_first),
          stress: st.stress, problem: st.problem, action: st.action
+         // 문제유형·스트레스원은 횟수만 (다중응답이므로 명수 의미 없음)
        };
     });
 
@@ -634,14 +666,18 @@ function calculateAdminStats(region, targetYear) {
     }
     result.over4Total = over4Count;
 
-    // 소방서/센터별 완료 데이터 생성
+    // ↓ 이렇게 교체
+    // 분기별 소방서 완료 데이터 생성
     var stationDone = {};
-    for (var sn in stationMap) {
-      stationDone[sn] = {
-        c: stationMap[sn].c,
-        p: Object.keys(stationMap[sn].pSet).length
-      };
-    }
+    ['q1','q2','q3','q4'].forEach(function(q) {
+      stationDone[q] = {};
+      for (var sn in stationByQ[q]) {
+        stationDone[q][sn] = {
+          c: stationByQ[q][sn].c,
+          p: Object.keys(stationByQ[q][sn].pSet).length
+        };
+      }
+    });
     result.stationDone = stationDone;
     return { success: true, data: result, year: year };
   } catch (error) { 

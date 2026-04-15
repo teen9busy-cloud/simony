@@ -48,10 +48,13 @@ h3 { color: #1b5e20; margin-top: 10px; margin-bottom: 10px; font-weight: normal;
 
 /* ─── 빈도표 ─── */
 .freq-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
-.freq-tbl th { background: #e8f5e9; color: #1b5e20; padding: 4px 6px; border: 1px solid #c8e6c9; font-weight: bold; text-align: center; }
-.freq-tbl td { padding: 3px 6px; border: 1px solid #e0e0e0; text-align: right; }
-.freq-tbl td:first-child { text-align: left; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.freq-tbl th { background: #e8f5e9; color: #1b5e20; padding: 4px 6px; border: 1px solid #c8e6c9; font-weight: bold; text-align: center; white-space: nowrap; }
+.freq-tbl td { padding: 3px 6px; border: 1px solid #e0e0e0; text-align: right; white-space: nowrap; }
+.freq-tbl td:first-child { text-align: left; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .freq-tbl tr.total-row td { background: #f5f5f5; font-weight: bold; }
+/* 횟수 열 = 연한 파란, 명수 열 = 연한 초록 헤더 */
+.freq-tbl th:nth-child(2), .freq-tbl th:nth-child(3) { background: #e3f2fd; color: #1565c0; }
+.freq-tbl th:nth-child(4), .freq-tbl th:nth-child(5) { background: #e8f5e9; color: #2e7d32; }
 
 /* ─── 복사 버튼 ─── */
 .btn-copy { position: absolute; top: 10px; right: 10px; background: #eeeeee; color: #555; border: 1px solid #ccc; border-radius: 3px; padding: 2px 8px; font-size: 11px; cursor: pointer; z-index: 5; }
@@ -116,14 +119,22 @@ function addStats(st1, st2) {
   res.emergP+=st2.emergP; res.emergC+=st2.emergC;
   res.groupP+=st2.groupP; res.groupC+=st2.groupC;
   res.callC+=st2.callC;
+  // 횟수 dict 합산
   ['gender','age','rank','job','life_gender','life_rank','method','place','path','prevExp','stress','problem','action']
     .forEach(function(d){ for(var k in st2[d]) res[d][k]=(res[d][k]||0)+st2[d][k]; });
+  // 명수 dict 합산 (firstSeen 기반 — 단순 덧셈으로 근사, 분기 경계에서 중복 없음)
+  ['gender_p','age_p','rank_p','job_p','method_p','place_p','path_p']
+    .forEach(function(d){
+      if(!res[d]) res[d]={};
+      if(st2[d]) { for(var k in st2[d]) res[d][k]=(res[d][k]||0)+st2[d][k]; }
+    });
   return res;
 }
 
 function makeEmptyStats() {
   var dicts={};
-  ['gender','age','rank','job','life_gender','life_rank','method','place','path','prevExp','stress','problem','action']
+  ['gender','age','rank','job','life_gender','life_rank','method','place','path','prevExp','stress','problem','action',
+   'gender_p','age_p','rank_p','job_p','method_p','place_p','path_p']
     .forEach(function(d){ dicts[d]={}; });
   return Object.assign({totalP:0,totalC:0,screenP:0,screenC:0,indepthP:0,indepthC:0,
     lifeP:0,lifeC:0,lifeTestC:0,emergP:0,emergC:0,groupP:0,groupC:0,callC:0},dicts);
@@ -250,7 +261,23 @@ function applyMonthRange() {
   document.getElementById('no-data-notice').style.display='none';
   document.getElementById('chart-body').style.display='block';
   renderChartContent(tot);
-  renderStationSection();
+
+  // 소방서별 통계도 월 범위에 맞게 합산
+  var rawStation = (_chartDataCache && _chartDataCache.stationDone) || {};
+  var combinedStation = {};
+  function mergeStation(base, qData) {
+    if (!qData) return;
+    for (var nm in qData) {
+      if (!base[nm]) base[nm] = { c: 0, pSet_size: 0 };
+      base[nm].c += qData[nm].c || 0;
+      base[nm].pSet_size += qData[nm].p || 0;
+    }
+  }
+  if (startM <= 3  && endM >= 1)  mergeStation(combinedStation, rawStation.q1);
+  if (startM <= 6  && endM >= 4)  mergeStation(combinedStation, rawStation.q2);
+  if (startM <= 9  && endM >= 7)  mergeStation(combinedStation, rawStation.q3);
+  if (startM <= 12 && endM >= 10) mergeStation(combinedStation, rawStation.q4);
+  renderStationSection(combinedStation);
 }
 
 function showTab(tabId, btn) {
@@ -271,16 +298,13 @@ function goBack() {
    ※ 백엔드(Code.gs) calculateAdminStats 에서 stationDone 을
      { name: {c:상담횟수, p:상담인원} } 형태로 반환하면 명수도 표시됩니다.
 */
-function renderStationSection() {
-  var raw=(_chartDataCache&&_chartDataCache.stationDone)||{};
-
-  /* DATA에 있는 관서 목록 수집 */
-  var allNames = Object.keys(raw).filter(function(n){return n;}).sort();
-  /* raw 데이터 파싱: 숫자(구버전) 또는 {c,p}(신버전) */
+function renderStationSection(combinedStation) {
+  // combinedStation: { "소방서명": { c: 횟수합계, pSet_size: 인원합계 } }
+  var allNames = Object.keys(combinedStation || {}).filter(function(n){return n;}).sort();
   var rows = allNames.map(function(nm, idx) {
-    var val = raw[nm];
-    var cnt = (typeof val === 'object' && val !== null) ? (val.c||0) : (val||0);
-    var ppl = (typeof val === 'object' && val !== null) ? (val.p||0) : 0;
+    var val = combinedStation[nm] || {};
+    var cnt = val.c || 0;
+    var ppl = val.pSet_size || 0;
     return { no:idx+1, name:nm, cnt:cnt, ppl:ppl };
   });
 
@@ -362,17 +386,33 @@ function makeChart(id,type,data,opts){
   _chartInstances[id]=new Chart(el.getContext('2d'),{type:type,data:data,options:opts||{}});
 }
 
-function freqTable(id,rows){
-  var el=document.getElementById(id); if(!el) return;
-  var total=rows.reduce(function(s,r){return s+(r[1]||0);},0);
-  var html='<table class="freq-tbl"><thead><tr><th>구분</th><th>건수</th><th>비율</th></tr></thead><tbody>';
-  rows.forEach(function(r){
-    var pct=total>0?(r[1]/total*100).toFixed(1):'0.0';
-    html+='<tr><td>'+r[0]+'</td><td>'+(r[1]||0).toLocaleString()+'</td><td>'+pct+'%</td></tr>';
+/* ─── 빈도표 헬퍼 ───
+   rows: [ [label, 횟수, 명수(optional)], ... ]
+   명수가 없으면 횟수만 표시
+*/
+function freqTable(id, rows) {
+  var el = document.getElementById(id); if (!el) return;
+  var hasPpl = rows.some(function(r){ return r[2] !== undefined; });
+  var totalC = rows.reduce(function(s,r){ return s+(r[1]||0); }, 0);
+  var totalP = hasPpl ? rows.reduce(function(s,r){ return s+(r[2]||0); }, 0) : null;
+
+  var html = '<table class="freq-tbl"><thead><tr><th>구분</th><th>횟수(회)</th><th>비율</th>';
+  if (hasPpl) html += '<th>명수(명)</th><th>비율</th>';
+  html += '</tr></thead><tbody>';
+
+  rows.forEach(function(r) {
+    var pctC = totalC > 0 ? (r[1]/totalC*100).toFixed(1) : '0.0';
+    html += '<tr><td>' + r[0] + '</td><td>' + (r[1]||0).toLocaleString() + '</td><td>' + pctC + '%</td>';
+    if (hasPpl) {
+      var pctP = totalP > 0 ? ((r[2]||0)/totalP*100).toFixed(1) : '0.0';
+      html += '<td>' + (r[2]||0).toLocaleString() + '</td><td>' + pctP + '%</td>';
+    }
+    html += '</tr>';
   });
-  html+='<tr class="total-row"><td>전 체</td><td>'+total.toLocaleString()+'</td><td>100%</td></tr>';
-  html+='</tbody></table>';
-  el.innerHTML=html;
+  html += '<tr class="total-row"><td>전 체</td><td>' + totalC.toLocaleString() + '</td><td>100%</td>';
+  if (hasPpl) html += '<td>' + (totalP||0).toLocaleString() + '</td><td>100%</td>';
+  html += '</tr></tbody></table>';
+  el.innerHTML = html;
 }
 
 /* ─── 차트 렌더링 ─── */
@@ -396,63 +436,141 @@ function renderChartContent(tot){
     ]
   },{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{x:{stacked:false},y:{beginAtZero:true}}});
 
+  // 분기별 빈도표
+  var qTbl = '<table class="freq-tbl"><thead><tr><th>구분</th><th>스크리닝</th><th>심층상담</th><th>생애주기</th><th>긴급지원</th><th>집단상담</th><th>합계</th></tr></thead><tbody>';
+  [{title:'1분기',d:q1},{title:'2분기',d:q2},{title:'3분기',d:q3},{title:'4분기',d:q4}].forEach(function(row){
+    var tot = row.d.screenC + row.d.indepthC + row.d.lifeC + row.d.emergC + row.d.groupC;
+    qTbl += '<tr><td>'+row.title+'</td><td>'+row.d.screenC+'</td><td>'+row.d.indepthC+'</td><td>'+row.d.lifeC+'</td><td>'+row.d.emergC+'</td><td>'+row.d.groupC+'</td><td><b>'+tot+'</b></td></tr>';
+  });
+  var totQ = (q1.screenC+q2.screenC+q3.screenC+q4.screenC) + (q1.indepthC+q2.indepthC+q3.indepthC+q4.indepthC) + (q1.lifeC+q2.lifeC+q3.lifeC+q4.lifeC) + (q1.emergC+q2.emergC+q3.emergC+q4.emergC) + (q1.groupC+q2.groupC+q3.groupC+q4.groupC);
+  qTbl += '<tr class="total-row"><td>연간합계</td><td>'+(q1.screenC+q2.screenC+q3.screenC+q4.screenC)+'</td><td>'+(q1.indepthC+q2.indepthC+q3.indepthC+q4.indepthC)+'</td><td>'+(q1.lifeC+q2.lifeC+q3.lifeC+q4.lifeC)+'</td><td>'+(q1.emergC+q2.emergC+q3.emergC+q4.emergC)+'</td><td>'+(q1.groupC+q2.groupC+q3.groupC+q4.groupC)+'</td><td><b>'+totQ+'</b></td></tr>';
+  qTbl += '</tbody></table>';
+  document.getElementById('freq-quarterly').innerHTML = qTbl;
+
   // ② 성별
   var gM=tot.gender['남']||0,gF=tot.gender['여']||0;
-  makeChart('chart-gender','doughnut',{labels:['남','여'],datasets:[{data:[gM,gF],backgroundColor:['#2196F3','#E91E63'],borderWidth:2}]},
-    {responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:function(c){var t=gM+gF;return c.label+': '+c.raw+'명 ('+Math.round(c.raw/t*100)+'%)';}}}}}); 
-  freqTable('freq-gender',[['남',gM],['여',gF]]);
+  var gMP=tot.gender_p ? (tot.gender_p['남']||0) : null;
+  var gFP=tot.gender_p ? (tot.gender_p['여']||0) : null;
+  var hasPpl = tot.gender_p && (gMP+gFP > 0);
+  makeChart('chart-gender','bar',{
+    labels:['남','여'],
+    datasets: hasPpl
+      ? [{label:'횟수(회)',data:[gM,gF],backgroundColor:'#2196F3',borderRadius:4},
+         {label:'명수(명)',data:[gMP,gFP],backgroundColor:'#90CAF9',borderRadius:4}]
+      : [{label:'횟수(회)',data:[gM,gF],backgroundColor:['#2196F3','#E91E63'],borderRadius:4}]
+  },{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}});
+  freqTable('freq-gender', hasPpl
+    ? [['남',gM,gMP],['여',gF,gFP]]
+    : [['남',gM],['여',gF]]);
 
   // ③ 연령대
   var ageK=['20대','30대','40대','50대','60대 이상'];
-  makeChart('chart-age','bar',{labels:ageK,datasets:[{label:'명수',data:ageK.map(function(k){return tot.age[k]||0;}),backgroundColor:COLORS,borderRadius:4}]},
-    {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}});
-  freqTable('freq-age',ageK.map(function(k){return [k,tot.age[k]||0];}));
+  var ageC=ageK.map(function(k){return tot.age[k]||0;});
+  var ageP=ageK.map(function(k){return tot.age_p?(tot.age_p[k]||0):null;});
+  var hasAgeP=tot.age_p&&ageP.some(function(v){return v>0;});
+  makeChart('chart-age','bar',{
+    labels:ageK,
+    datasets: hasAgeP
+      ? [{label:'횟수(회)',data:ageC,backgroundColor:'#4CAF50',borderRadius:4},
+         {label:'명수(명)',data:ageP,backgroundColor:'#A5D6A7',borderRadius:4}]
+      : [{label:'횟수(회)',data:ageC,backgroundColor:COLORS,borderRadius:4}]
+  },{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}});
+  freqTable('freq-age', ageK.map(function(k,i){
+    return hasAgeP ? [k,ageC[i],ageP[i]] : [k,ageC[i]];
+  }));
 
   // ④ 계급별
   var rkK=['소방사','소방교','소방장','소방위','소방경','소방령','소방정','소방보조인력'];
-  var rkV=rkK.map(function(k){return tot.rank[k]||0;});
-  var nzRk=rkK.filter(function(k,i){return rkV[i]>0;}),nzRv=rkV.filter(function(v){return v>0;});
-  makeChart('chart-rank','bar',{labels:nzRk,datasets:[{label:'명수',data:nzRv,backgroundColor:COLORS,borderRadius:4}]},
-    {indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{precision:0}}}});
-  freqTable('freq-rank',nzRk.map(function(k){return [k,tot.rank[k]||0];}));
+  var rkC=rkK.map(function(k){return tot.rank[k]||0;});
+  var rkP=rkK.map(function(k){return tot.rank_p?(tot.rank_p[k]||0):null;});
+  var hasRkP=tot.rank_p&&rkP.some(function(v){return v>0;});
+  var nzRk=rkK.filter(function(k,i){return rkC[i]>0;});
+  var nzRkC=rkC.filter(function(v){return v>0;});
+  var nzRkP=rkK.map(function(k,i){return{k:k,c:rkC[i],p:rkP[i]};}).filter(function(o){return o.c>0;}).map(function(o){return o.p;});
+  makeChart('chart-rank','bar',{
+    labels:nzRk,
+    datasets: hasRkP
+      ? [{label:'횟수(회)',data:nzRkC,backgroundColor:'#FF9800',borderRadius:4},
+         {label:'명수(명)',data:nzRkP,backgroundColor:'#FFE0B2',borderRadius:4}]
+      : [{label:'횟수(회)',data:nzRkC,backgroundColor:COLORS,borderRadius:4}]
+  },{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{x:{beginAtZero:true,ticks:{precision:0}}}});
+  freqTable('freq-rank', nzRk.map(function(k,i){
+    return hasRkP ? [k,nzRkC[i],nzRkP[i]] : [k,nzRkC[i]];
+  }));
 
   // ⑤ 직무별
   var jL=['화재진압','화재운전','구조','구급','상황실','화재조사','행정업무','기타'];
-  var jV=['1','2','3','4','5','6','7','8'].map(function(k){return tot.job[k]||0;});
-  makeChart('chart-job','bar',{labels:jL,datasets:[{label:'명수',data:jV,backgroundColor:COLORS,borderRadius:4}]},
-    {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}});
-  freqTable('freq-job',jL.map(function(l,i){return [l,jV[i]];}));
+  var jKeys=['1','2','3','4','5','6','7','8'];
+  var jC=jKeys.map(function(k){return tot.job[k]||0;});
+  var jP=jKeys.map(function(k){return tot.job_p?(tot.job_p[k]||0):null;});
+  var hasJP=tot.job_p&&jP.some(function(v){return v>0;});
+  makeChart('chart-job','bar',{
+    labels:jL,
+    datasets: hasJP
+      ? [{label:'횟수(회)',data:jC,backgroundColor:'#9C27B0',borderRadius:4},
+         {label:'명수(명)',data:jP,backgroundColor:'#E1BEE7',borderRadius:4}]
+      : [{label:'횟수(회)',data:jC,backgroundColor:COLORS,borderRadius:4}]
+  },{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}});
+  freqTable('freq-job', jL.map(function(l,i){
+    return hasJP ? [l,jC[i],jP[i]] : [l,jC[i]];
+  }));
 
   // ⑥ 상담 방법
   var mL=['대면상담','전화상담','화상상담','메신저','기타'];
-  var mV=[1,2,3,4,5].map(function(i){return tot.method[i]||0;});
-  var mNZ=mL.filter(function(_,i){return mV[i]>0;}),mVNZ=mV.filter(function(v){return v>0;});
-  makeChart('chart-method','doughnut',{labels:mNZ,datasets:[{data:mVNZ,backgroundColor:COLORS.slice(0,mNZ.length),borderWidth:2}]},
-    {responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}});
-  freqTable('freq-method',mNZ.map(function(l,i){return [l,mVNZ[i]];}));
+  var mKeys=[1,2,3,4,5];
+  var mC=mKeys.map(function(k){return tot.method[k]||0;});
+  var mPall=mKeys.map(function(k){return tot.method_p?(tot.method_p[k]||0):null;});
+  var hasMp=tot.method_p&&mPall.some(function(v){return v>0;});
+  var mNZ=[],mCNZ=[],mPNZ=[];
+  mL.forEach(function(l,i){ if(mC[i]>0){mNZ.push(l);mCNZ.push(mC[i]);mPNZ.push(mPall[i]);} });
+  makeChart('chart-method','bar',{
+    labels:mNZ,
+    datasets: hasMp
+      ? [{label:'횟수(회)',data:mCNZ,backgroundColor:'#00BCD4',borderRadius:4},
+         {label:'명수(명)',data:mPNZ,backgroundColor:'#B2EBF2',borderRadius:4}]
+      : [{label:'횟수(회)',data:mCNZ,backgroundColor:COLORS,borderRadius:4}]
+  },{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}});
+  freqTable('freq-method', mNZ.map(function(l,i){
+    return hasMp ? [l,mCNZ[i],mPNZ[i]] : [l,mCNZ[i]];
+  }));
 
   // ⑦ 유입 경로
   var pL=['본인신청','상급자권유','동료권유','의무상담','상담사연결','기타'];
-  var pV=['2','3','4','1','5','6'].map(function(k){return tot.path[k]||0;});
-  makeChart('chart-path','bar',{labels:pL,datasets:[{label:'건수',data:pV,backgroundColor:COLORS,borderRadius:4}]},
-    {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}});
-  freqTable('freq-path',pL.map(function(l,i){return [l,pV[i]];}));
+  var pKeys=['2','3','4','1','5','6'];
+  var pC=pKeys.map(function(k){return tot.path[k]||0;});
+  var pP=pKeys.map(function(k){return tot.path_p?(tot.path_p[k]||0):null;});
+  var hasPP=tot.path_p&&pP.some(function(v){return v>0;});
+  makeChart('chart-path','bar',{
+    labels:pL,
+    datasets: hasPP
+      ? [{label:'횟수(회)',data:pC,backgroundColor:'#F44336',borderRadius:4},
+         {label:'명수(명)',data:pP,backgroundColor:'#FFCDD2',borderRadius:4}]
+      : [{label:'횟수(회)',data:pC,backgroundColor:COLORS,borderRadius:4}]
+  },{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}});
+  freqTable('freq-path', pL.map(function(l,i){
+    return hasPP ? [l,pC[i],pP[i]] : [l,pC[i]];
+  }));
 
-  // ⑧ 문제유형
+  // ⑧ 문제유형 (다중응답 → 횟수만 표시)
   var prL=['정상','PTSD','우울감','수면문제','물질중독','행위중독','자살관련','불안장애','정신증','직무스트레스','기타'];
-  var prV=[1,2,3,4,5,6,7,8,9,10,11].map(function(i){return tot.problem[i]||0;});
-  makeChart('chart-problem','bar',{labels:prL,datasets:[{label:'건수',data:prV,backgroundColor:prL.map(function(_,i){return COLORS[i%COLORS.length];}),borderRadius:4}]},
-    {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}});
-  freqTable('freq-problem',prL.map(function(l,i){return [l,prV[i]];}));
+  var prKeys=[1,2,3,4,5,6,7,8,9,10,11];
+  var prC=prKeys.map(function(i){return tot.problem[i]||0;});
+  makeChart('chart-problem','bar',{
+    labels:prL,
+    datasets:[{label:'횟수(회)',data:prC,backgroundColor:prL.map(function(_,i){return COLORS[i%COLORS.length];}),borderRadius:4}]
+  },{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:function(items){return items[0].label;},label:function(c){return '횟수: '+c.raw+'회';}}}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}});
+  freqTable('freq-problem', prL.map(function(l,i){ return [l,prC[i]]; }));
 
-  // ⑨ 스트레스원
+  // ⑨ 스트레스원 (횟수만 표시)
   var sMap={'1-1':'인사이동','1-2':'인사갈등','1-3':'역할갈등','1-4':'과중한책임','1-5':'업무량변화','1-6':'업무질변화','1-7':'업무불연속','1-8':'교대근무','1-9':'직무요구도','1-10':'직무자율성','1-11':'기술부족','1-12':'물리적환경','1-13':'감정노동','2-1':'상급자갈등','2-2':'동료갈등','2-3':'민원갈등','2-4':'동료지지부족','2-5':'직장내괴롭힘','3-1':'외상사건(현장)','3-2':'외상사건(간접)','4-1':'일가정불균형','4-2':'본인사건','4-3':'재정문제','4-4':'금전관계','5-1':'배우자갈등','5-2':'자녀사건','5-3':'부모사건','5-4':'가족관계','5-5':'타인관계','6':'기타'};
-  var sP=Object.keys(sMap).map(function(k){return {label:sMap[k],val:tot.stress[k]||0};})
-    .filter(function(p){return p.val>0;}).sort(function(a,b){return b.val-a.val;});
+  var sP=Object.keys(sMap).map(function(k){return {label:sMap[k],c:tot.stress[k]||0};})
+    .filter(function(p){return p.c>0;}).sort(function(a,b){return b.c-a.c;});
   var top10=sP.slice(0,10);
-  makeChart('chart-stress','bar',{labels:top10.map(function(p){return p.label;}),datasets:[{label:'건수',data:top10.map(function(p){return p.val;}),backgroundColor:COLORS,borderRadius:4}]},
-    {indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{precision:0}}}});
-  freqTable('freq-stress',sP.map(function(p){return [p.label,p.val];}));
+  makeChart('chart-stress','bar',{
+    labels:top10.map(function(p){return p.label;}),
+    datasets:[{label:'횟수(회)',data:top10.map(function(p){return p.c;}),backgroundColor:COLORS,borderRadius:4}]
+  },{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{precision:0}}}});
+  freqTable('freq-stress', sP.map(function(p){ return [p.label, p.c]; }));
 }
 </script>
 </head>
@@ -591,7 +709,10 @@ function renderChartContent(tot){
           <div class="chart-card" id="card-quarterly">
             <button class="btn-copy" onclick="copySection('card-quarterly')">📋 복사</button>
             <h4>② 분기별 상담 유형 현황 <span style="font-size:11px;font-weight:normal;color:#999;">(연간 전체 기준)</span></h4>
-            <div style="height:250px;"><canvas id="chart-quarterly"></canvas></div>
+            <div class="chart-and-table">
+              <div class="chart-side"><div style="height:250px;"><canvas id="chart-quarterly"></canvas></div></div>
+              <div class="table-side"><div id="freq-quarterly"></div></div>
+            </div>
           </div>
 
           <div class="chart-card" id="card-gender">
